@@ -1,1 +1,18 @@
 # LIST YOUR PYTHON3 PACKAGES HERE
+apriltag
+paho-mqtt>=1.2
+pymongo
+pytest
+pyyaml
+git+https://github.com/RobotWebTools/rosbridge_suite.git@ros1#subdirectory=rosbridge_library
+inject
+
+# Non-Architecture Specific Packages Only
+# ML/DL packages
+tqdm
+seaborn
+pandas
+matplotlib>=3.2.2
+scipy>=1.4.1
+numpy>=1.18.5
+cython
