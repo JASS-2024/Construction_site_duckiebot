@@ -30,9 +30,13 @@
 	    <arg name="/LED/emitter" value="true"/>
 
   	</include>
-<!-- 	<include file="$(find apriltag)/launch/apriltag_detector_node.launch"> -->
-<!--             <arg name="veh" value="$(arg veh)"/> -->
-<!-- 	</include> -->
+	<include file="$(find apriltag)/launch/apriltag_detector_node.launch">
+            <arg name="veh" value="$(arg veh)"/>
+	</include>
+	<include file="$(find obstacle_detection)/launch/obstacle_detection_node.launch">
+            <arg name="veh" value="$(arg veh)"/>
+	</include>
+
 
 <!-- 	<include file="$(find trajectory)/launch/trajectory.launch"> -->
 <!--             <arg name="veh" value="$(arg veh)"/> -->

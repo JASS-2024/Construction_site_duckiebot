@@ -8,7 +8,6 @@ setup_args = generate_distutils_setup(
     packages=[
         "obstacle_detection_node",
     ],
-    package_dir={"": "include"},
 )
 
 setup(**setup_args)

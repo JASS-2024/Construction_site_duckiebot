@@ -14,6 +14,9 @@ from duckietown_msgs.msg import (
 
 from lane_controller.controller import LaneController
 
+class V_Bar_replacement:
+    def __init__(self):
+        self.value = 0
 
 class LaneControllerNode(DTROS):
     """Computes control action.
@@ -57,6 +60,7 @@ class LaneControllerNode(DTROS):
         # TODO: MAKE TO WORK WITH NEW DTROS PARAMETERS
         self.params = dict()
         self.params["~v_bar"] = DTParam("~v_bar", param_type=ParamType.FLOAT, min_value=0.0, max_value=5.0)
+        self.initial_v_bar = self.params["~v_bar"].value
         self.params["~k_d"] = DTParam("~k_d", param_type=ParamType.FLOAT, min_value=-100.0, max_value=100.0)
         self.params["~k_theta"] = DTParam(
             "~k_theta", param_type=ParamType.FLOAT, min_value=-100.0, max_value=100.0
@@ -124,7 +128,18 @@ class LaneControllerNode(DTROS):
             "~obstacle_distance_reading", StopLineReading, self.cbObstacleStopLineReading, queue_size=1
         )
 
+        self.sub_obstacle_stop = rospy.Subscriber(
+            "~stop_request", BoolStamped, self.stopOnObstacle, queue_size=1
+        )
         self.log("Initialized!")
+
+
+    def stopOnObstacle(self, msg):
+        if msg.data:
+            self.params["~v_bar"] = V_Bar_replacement()
+        else:
+            self.params["~v_bar"] = DTParam("~v_bar", param_type=ParamType.FLOAT, min_value=0.0, max_value=5.0)
+
 
     def cbObstacleStopLineReading(self, msg):
         """

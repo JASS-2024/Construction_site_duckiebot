@@ -90,8 +90,8 @@ ENV TENSORRT_VERSION 7.1.3.4
 ENV PYCUDA_VERSION 2021.1
 
 # install apt dependencies
-COPY ./dependencies-apt.txt "${REPO_PATH}/"
-RUN dt-apt-install ${REPO_PATH}/dependencies-apt.txt
+#COPY ./dependencies-apt.txt "${REPO_PATH}/"
+#RUN dt-apt-install ${REPO_PATH}/dependencies-apt.txt
 
 # install python3 dependencies
 RUN pip uninstall dt-apriltag

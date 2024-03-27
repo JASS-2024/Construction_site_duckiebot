@@ -1,10 +1,10 @@
 """
-    lane_controller
+    obstacle_detection_node
     ---------------
 
-    The ``lane_controller`` library contains the implementations for control architectures for the motor commands. The
+    The ``obstacle_detection_node`` library contains the implementations for control architectures for the motor commands. The
     basic and default one is :py:class:`LaneController`
 
-    .. autoclass:: lane_controller.LaneController
+    .. autoclass:: obstacle_detection_node.LaneController
 
 """

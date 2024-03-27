@@ -22,6 +22,7 @@ from duckietown.dtros import DTROS, NodeType, TopicType, DTParam, ParamType
 AMOUNT_OF_ITERATIONS = 10
 HEIGHT = 240
 WIDTH = 320
+USE_DL = False
 
 
 class LineDetectorNode(DTROS):
@@ -71,46 +72,46 @@ class LineDetectorNode(DTROS):
         )
 
         self.pub_whites.publish(Bool())
-
-        # Model init block
-        self.repo_path = os.environ['DT_REPO_PATH']
-        torch_model = MySegmentationNet()
-        file_path = f'{self.repo_path}/packages/line_detector/config/model_weights.pth'
-        torch_model.load_state_dict(torch.load(file_path))
-        torch_model.eval()
-        if torch.cuda.is_available():
-            self.device = torch.device("cuda")
-        else:
-            self.device = torch.device("cpu")
-        print("Device is", self.device)
-        torch_model.to(self.device)
-        torch_model.eval()
-
-        test = np.random.rand(1, 3, HEIGHT // 2, WIDTH).astype(np.float32)
-        t_test = torch.from_numpy(test)
-        t_test.size()
-        t_test = t_test.to(self.device)
         self.debug = DTParam("~debug", param_type=ParamType.BOOL)
         self.isFirst = True
-        self.model = torch2trt(torch_model, [t_test])
-        self.resize = transforms.Resize((HEIGHT, WIDTH))
-        print(f"Starting model. Maximum amount of iterations is {AMOUNT_OF_ITERATIONS}")
-        iteration = 0
-        while iteration < AMOUNT_OF_ITERATIONS:
-            with torch.no_grad():
-                test = np.random.rand(1, 3, 120, 320).astype(np.float32)
-                t_test = torch.from_numpy(test)
-                t_test.size()
-                t_test = t_test.to(self.device)
-                start = time.time_ns()
-                result = self.model(t_test)
-                delta = (time.time_ns() - start) / 1000000
-                print(result[0, 0, 0, 0])
-                iteration += 1
-                print(f"Current iteration is {iteration}, current delta is {delta}")
-        del t_test
-        del result
-        print("Model init successful!")
+        if USE_DL:
+            # Model init block
+            self.repo_path = os.environ['DT_REPO_PATH']
+            torch_model = MySegmentationNet()
+            file_path = f'{self.repo_path}/packages/line_detector/config/model_weights.pth'
+            torch_model.load_state_dict(torch.load(file_path))
+            torch_model.eval()
+            if torch.cuda.is_available():
+                self.device = torch.device("cuda")
+            else:
+                self.device = torch.device("cpu")
+            print("Device is", self.device)
+            torch_model.to(self.device)
+            torch_model.eval()
+
+            test = np.random.rand(1, 3, HEIGHT // 2, WIDTH).astype(np.float32)
+            t_test = torch.from_numpy(test)
+            t_test.size()
+            t_test = t_test.to(self.device)
+            self.model = torch2trt(torch_model, [t_test])
+            self.resize = transforms.Resize((HEIGHT, WIDTH))
+            print(f"Starting model. Maximum amount of iterations is {AMOUNT_OF_ITERATIONS}")
+            iteration = 0
+            while iteration < AMOUNT_OF_ITERATIONS:
+                with torch.no_grad():
+                    test = np.random.rand(1, 3, 120, 320).astype(np.float32)
+                    t_test = torch.from_numpy(test)
+                    t_test.size()
+                    t_test = t_test.to(self.device)
+                    start = time.time_ns()
+                    result = self.model(t_test)
+                    delta = (time.time_ns() - start) / 1000000
+                    print(result[0, 0, 0, 0])
+                    iteration += 1
+                    print(f"Current iteration is {iteration}, current delta is {delta}")
+            del t_test
+            del result
+            print("Model init successful!")
 
         # Define parameters
         self._line_detector_parameters = rospy.get_param("~line_detector_parameters", None)
@@ -205,22 +206,28 @@ class LineDetectorNode(DTROS):
 
         # NN
         img = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        with torch.no_grad():
-            x = torch.from_numpy(img).permute(2, 0, 1)
-            x = self.resize(x)
-            x = x[:, x.size()[1] // 2:, :]
-            x = torch.unsqueeze(x, 0)
-            print(x.size())
-            x = x.to(self.device) / 255
-            start_nn = time.time_ns()
-            result = self.model(x)
-            delta_nn = time.time_ns() - start_nn
-            # result = result.to(torch.device("cpu"))
-            result = result[0]
-            print(result.size())
-            buf = torch.argmax(result, dim=0).to(torch.uint8).to(torch.device("cpu")).numpy()
-            delta_no_mem = time.time_ns() - start
-            print(np.unique(buf))
+        if USE_DL:
+            with torch.no_grad():
+                x = torch.from_numpy(img).permute(2, 0, 1)
+                x = self.resize(x)
+                x = x[:, x.size()[1] // 2:, :]
+                x = torch.unsqueeze(x, 0)
+                if self.debug.value:
+                    print(x.size())
+                x = x.to(self.device) / 255
+                start_nn = time.time_ns()
+                result = self.model(x)
+                delta_nn = time.time_ns() - start_nn
+                # result = result.to(torch.device("cpu"))
+                result = result[0]
+                if self.debug.value:
+                    print(result.size())
+                buf = torch.argmax(result, dim=0).to(torch.uint8).to(torch.device("cpu")).numpy()
+                delta_no_mem = time.time_ns() - start
+                if self.debug.value:
+                    print(np.unique(buf))
+        else:
+            buf = np.ones((HEIGHT, WIDTH))
         image = np.zeros((buf.shape[0], buf.shape[1], 3), dtype=np.uint8)
         image[buf == 1] = [255, 255, 255]
         image[buf == 2] = [0, 255, 255]
@@ -298,12 +305,13 @@ class LineDetectorNode(DTROS):
                 publisher.publish(debug_image_msg)
 
         delta = time.time_ns() - start
-        if self.debug.value:
-            print(
-                f"Image processed, full pipeline took {delta / 1000000} ms, nn took {delta_nn / 1000000} ms, nn with memory transfering {delta_no_mem / 1000000} ms")
-        if self.isFirst:
-            print("Node init successful")
-            self.isFirst = False
+        if USE_DL:
+            if self.debug.value:
+                print(
+                    f"Image processed, full pipeline took {delta / 1000000} ms, nn took {delta_nn / 1000000} ms, nn with memory transfering {delta_no_mem / 1000000} ms")
+            if self.isFirst:
+                print("Node init successful")
+                self.isFirst = False
 
     @staticmethod
     def _to_segment_msg(lines, normals, color):
