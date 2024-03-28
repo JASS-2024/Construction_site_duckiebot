@@ -1,0 +1,9 @@
+h_sat: 255
+l_sat: 40
+h_hue: 65
+l_hue: 25
+h_val: 255
+l_val: 40
+erode_kernel_size: 5
+mean_pix_val: 0.01
+cutoff: 0.25
