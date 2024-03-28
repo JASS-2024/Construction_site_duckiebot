@@ -1,0 +1,3 @@
+object_id: 123123 # Your object
+mqtt_broker_ip: 'XXX.XXX.XXX.XXX' # IP Address for mqtt broker
+mqtt_topic: 'Default Topic Name' # Topic name that you want to subscribe to
