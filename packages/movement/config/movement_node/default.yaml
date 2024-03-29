@@ -1,0 +1,4 @@
+move_speed:  1.0
+rotation_speed:  1.0
+move_time:  0.05
+rotation_time: 0.05

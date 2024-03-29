@@ -1,0 +1,8 @@
+type_dict:
+  #type of unknown apriltag is zero
+
+  #type of "stop to think apriltag"
+  "239": 1
+  #type of "center of the parking lot apriltag"
+  "30": 2
+
