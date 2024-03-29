@@ -1,0 +1,16 @@
+image_width: 640
+image_height: 480
+center_threshold: 10
+patterns:
+  forward:
+    tags_to_ignore: []
+    initial_move: "FORWARD"
+    tags_sequence: []
+    tags_directions: []
+    exact_coordinates: []
+  right:
+    tags_to_ignore: [ ]
+    initial_move: "FORWARD"
+    tags_sequence: [ ]
+    tags_directions: [ ]
+    exact_coordinates: [ ]
