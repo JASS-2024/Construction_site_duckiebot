@@ -6,7 +6,7 @@ geometry-msgs
 inject>=4.0
 mock
 msgpack-python>=0.4.8
-paho-mqtt>=1.2
+paho-mqtt
 pymongo
 pytest
 pyyaml
