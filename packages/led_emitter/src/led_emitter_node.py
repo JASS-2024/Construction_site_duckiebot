@@ -250,7 +250,7 @@ class LEDEmitterNode(DTROS):
         Args:
             msg: you can get requested pattern name and optionally flashing through msg.pattern_name.data
         """
-        print("Printing the received data:" + str(msg.data))
+        # print("Printing the received data:" + str(msg.data))
         if len(str(msg.data).strip().split(" ")) > 1:
             freq = str(msg.data).split(" ")[1]
             if freq.isdigit():

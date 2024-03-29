@@ -39,4 +39,7 @@
 	<include file="$(find timer)/launch/timer_node.launch">
             <arg name="veh" value="$(arg veh)"/>
 	</include>
+    <include file="$(find rectangle_test_node)/launch/rectangle_test_node.launch">
+            <arg name="veh" value="$(arg veh)"/>
+	</include>
 </launch>
