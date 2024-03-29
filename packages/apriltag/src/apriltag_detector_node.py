@@ -67,7 +67,6 @@ class AprilTagDetector(DTROS):
         detections_list = []
         if tag_list:
             self.send_LED_request()
-            print("found some apriltags")
         else:
             #if queue then turn off
             pass

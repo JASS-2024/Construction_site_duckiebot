@@ -75,9 +75,10 @@ class MQTTNode(DTROS):
         posix_timestamp = timestamp_dt.timestamp()
         ros_time = rospy.Time.from_sec(posix_timestamp)
 
-        nanoseconds = int(timestamp_dt.timestamp() * 1e9)
+        nanoseconds = ros_time.to_nsec()
 
         return nanoseconds
+
 
     # DEBUGGING
     # def on_message(self, client, userdata, msg):
