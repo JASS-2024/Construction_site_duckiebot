@@ -3,7 +3,7 @@
     <arg name="pkg_name" value="apriltag"/>
     <arg name="node_name" default="apriltag_detector_node"/>
     <arg name="config" default="baseline" doc="Specify a config."/>
-    <arg name="param_file_name" default="$(env ROBOT_TYPE)" doc="Specify a param file. ex: duckiebot."/>
+    <arg name="param_file_name" default="ApTag_protocol" doc="Specify a param file. ex:megaman"/>
 
     <!-- Subscription -->
     <!-- "~image_rect": sensor_msgs/CompressedImage. Input rectified compressed image in JPEG format. -->
@@ -14,10 +14,8 @@
     <!-- "tag_detections/image/compressed": sensor_msgs/CompressedImage. Image with detections superimposed in JPEG format. -->
 <group ns="$(arg veh)">
         <node name="$(arg node_name)" pkg="$(arg pkg_name)" type="$(arg node_name).py" output="screen">
-            <remap from="apriltag_detector_node/start_detection" to="stop_line_filter_node/at_stop_line"/>
+            <rosparam command="load" file="$(find apriltag)/config/$(arg param_file_name).yaml"/>
             <remap from="apriltag_detector_node/image" to="camera_node/image/compressed" />
-            <remap from="apriltag_detector_node/stop_detection" to="planning_node/stop_detection"/>
-            <remap from="apriltag_detector_node/switcher" to="trajectory/end_trajectory_sub"/>
             <remap from="apriltag_detector_node/change_pattern" to="led_emitter_node/change_pattern"/>
         </node>
 </group>

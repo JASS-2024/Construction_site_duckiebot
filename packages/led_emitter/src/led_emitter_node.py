@@ -47,7 +47,7 @@ class LEDEmitterNode(DTROS):
     - frequency_mask: a list of 5 binary flags (0 or 1) that specify which of the LEDs should be blinking,
       used only if the frequency is not 0. The LEDs with the flag set to 0, will maintain their solid color.
 
-    The defaut patterns are defined in the `LED_protocol.yaml` configuration file for the node.
+    The defaut patterns are defined in the `ApTag_protocol.yaml` configuration file for the node.
 
     Currently supported colors are: `green`, `red`, `blue`, `white`, `yellow`, `purple`, `cyan`,
     `pink`, `switchedoff`. More colors can be defined in the node's configuration file.
@@ -70,7 +70,7 @@ class LEDEmitterNode(DTROS):
 
     Configuration:
         ~LED_protocol (nested dictionary): Nested dictionary that describes the LED protocols (patterns). The
-            default can be seen in the `LED_protocol.yaml` configuration file for the node.
+            default can be seen in the `ApTag_protocol.yaml` configuration file for the node.
         ~LED_scale (:obj:`float`): A scaling factor (between 0 and 1) that is applied to the colors in order
             to reduce the overall LED brightness, default is 0.8.
         ~channel_order (:obj:`str`): A string that controls the order in which the 3 color channels should be
@@ -265,11 +265,9 @@ class LEDEmitterNode(DTROS):
         #if the pattern is listed in the configs
         if pattern_name.strip("'").strip('"') in self._LED_protocol["signals"]:
             self.changePattern(pattern_name)
+            self.updateLEDs()
         else:
             self.log("Try using a different pattern", type="err",)
-
-        # self.changePattern(str(msg.pattern_name.data))
-        # return ChangePatternResponse()
 
     def changePattern(self, pattern_name):
         """Change the current LED pattern.
@@ -339,6 +337,7 @@ class LEDEmitterNode(DTROS):
 
             # Anyway modify the frequency (to stop timer if static)
             self.changeFrequency()
+            self.updateLEDs()
 
             # Loginfo
             self.log("Pattern changed to (%r), cycle: %s " % (pattern_name, self.frequency))
