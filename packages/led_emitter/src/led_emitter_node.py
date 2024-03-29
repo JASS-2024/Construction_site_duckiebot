@@ -132,9 +132,9 @@ class LEDEmitterNode(DTROS):
         # self.srv_set_LED_ = rospy.Service(
         #     "~set_custom_pattern", SetCustomLEDPattern, self.srvSetCustomLEDPattern
         # )
-        self.srv_hui= rospy.Service("~set_pattern", ChangePattern, lambda x: ChangePatternResponse())
+        self.srv_hui= rospy.Service("~set_pattern", ChangePattern, lambda x:   ChangePatternResponse())#self.srvSetPattern)
 
-        self.srv_set_pattern_ = rospy.Subscriber("~change_pattern", String, self.srvSetPattern, queue_size=1)
+        # self.srv_set_pattern_ = rospy.Subscriber("~change_pattern", String, self.srvSetPattern, queue_size=1)
 
         # Scale intensity of the LEDs
         for name, c in self._LED_protocol["colors"].items():
@@ -250,24 +250,33 @@ class LEDEmitterNode(DTROS):
         Args:
             msg: you can get requested pattern name and optionally flashing through msg.pattern_name.data
         """
-        # print("Printing the received data:" + str(msg.data))
-        if len(str(msg.data).strip().split(" ")) > 1:
-            freq = str(msg.data).split(" ")[1]
-            if freq.isdigit():
-                self.frequency = float(freq)
-                self.changeFrequency()
-            else:
-                self.log("Strange type of frequency used, try using digits", type="err", )
-            pattern_name = str(msg.data).split(" ")[0].strip().upper()
-        else:
-            pattern_name = str(msg.data.strip().upper())
+
+        data = msg.data
+        # data = msg.pattern_name
+        print("Printing the received data:" + str(data))
+        # if len(str(data).strip().split(" ")) > 1:
+        #     freq = str(data).split(" ")[1]
+        #     if freq.isdigit():
+        #         self.frequency = float(freq)
+        #         self.changeFrequency()
+        #     else:
+        #         self.log("Strange type of frequency used, try using digits", type="err", )
+        #     pattern_name = str(data).split(" ")[0].strip().upper()
+        # else:
+        pattern_name = str(data).replace("'", "").replace("\"", "")
+        # print(pattern_name in self._LED_protocol["signals"])
+        # print()
+
 
         #if the pattern is listed in the configs
-        if pattern_name.strip("'").strip('"') in self._LED_protocol["signals"]:
+        try:
+            t = self._LED_protocol["signals"][pattern_name]
             self.changePattern(pattern_name)
             self.updateLEDs()
-        else:
+        except:
             self.log("Try using a different pattern", type="err",)
+
+        # return ChangePatternResponse()
 
     def changePattern(self, pattern_name):
         """Change the current LED pattern.
@@ -285,7 +294,8 @@ class LEDEmitterNode(DTROS):
         if pattern_name:
             # No need to change if we already have the right pattern, unless it is other, because
             # we might have updated its definition
-            if self.current_pattern_name == pattern_name and pattern_name != "custom":
+            if self.current_pattern_name == pattern_name:
+                print("Nothing to change")
                 return
             elif pattern_name.strip("'").strip('"') in self._LED_protocol["signals"]:
                 self.current_pattern_name = pattern_name
