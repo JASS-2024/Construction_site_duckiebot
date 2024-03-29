@@ -35,9 +35,27 @@ class ParkingNode(DTROS):
 
         # Read parameters:
         self.parking_patterns: dict = rospy.get_param('~parking_patterns')
+        self.optitrack_positional_threshold = DTParam('~optitrack_positional_threshold', ParamType=ParamType.FLOAT,
+                                                      min_value=0, max_value=1)
+        self.optitrack_angle_threshold = DTParam('~optitrack_angle_threshold', ParamType=ParamType.FLOAT, min_value=0,
+                                                 max_value=1)
+        self.april_tag_centering_threshold = DTParam('~april_tag_centering_threshold', ParamType=ParamType.FLOAT,
+                                                     min_value=0,
+                                                     max_value=1000)
+        self.april_tag_check_position_x = DTParam('~april_tag_check_position_x', ParamType=ParamType.FLOAT, min_value=0,
+                                                  max_value=1000)
+        self.april_tag_check_position_y = DTParam('~april_tag_check_position_y', ParamType=ParamType.FLOAT, min_value=0,
+                                                  max_value=1000)
+        self.april_tag_area_of_covering_threshold = DTParam('~april_tag_area_of_covering_threshold',
+                                                            ParamType=ParamType.FLOAT, min_value=0, max_value=1)
+        self.april_tag_average_size_threshold = DTParam('~april_tag_average_size_threshold', ParamType=ParamType.FLOAT,
+                                                        min_value=0, max_value=1000)
+        self.april_tag_bounding_box_size = DTParam('~april_tag_bounding_box_size', ParamType=ParamType.FLOAT,
+                                                   min_value=0, max_value=1000)
 
         # Subscriber
-        self.april_tag_sub = rospy.Subscriber("~april_tags", AprilTagDetectionArray, self.april_tag_callback, queue_size=1)
+        self.april_tag_sub = rospy.Subscriber("~april_tags", AprilTagDetectionArray, self.april_tag_callback,
+                                              queue_size=1)
         self.wheels_result = rospy.Subscriber("~wheels_result", BoolStamped, self.wheels_callback, queue_size=1)
         self.optitrack_sub = rospy.Subscriber("~optitrack", Float32MultiArray, self.optitrack_callback, queue_size=1)
         self.timer_sub = rospy.Subscriber("~timer", BoolStamped, self.timer_callback, queue_size=1)
@@ -130,11 +148,37 @@ class ParkingNode(DTROS):
             return
         if self.movement == MovementType.OPTITRACK:
             movement_command = self.calculate_optitrack_next_move()
+            self.log(f"Moving in optitrack mode, movement command is {movement_command}")
+            self.log(f"Bot coords: x: {self.x_optitrack}, y: {self.y_optitrack}, theta: {self.theta_optitrack}")
         else:
             movement_command = self.calculate_april_tag_next_move()
+            self.log(f"Moving in april_tag mode, movement command is {movement_command}")
+            if self.parking_patterns[self.current_pattern]["target_april_tag"] not in self.tags_id:
+                self.log("April tag wasn't found")
+            else:
+                self.log(
+                    f"Current April tag params: \n "
+                    f"april_tag_centering_threshold: {self.april_tag_centering_threshold} \n "
+                    f"april_tag_check_position_x: {self.april_tag_check_position_x} \n "
+                    f"april_tag_check_position_y: {self.april_tag_check_position_y} \n "
+                    f"april_tag_area_of_covering_threshold: {self.april_tag_area_of_covering_threshold} \n "
+                    f"april_tag_average_size_threshold: {self.april_tag_average_size_threshold} \n "
+                    f"april_tag_bounding_box_size : {self.april_tag_bounding_box_size} \n")
+                tag_index = 0
+                for i, elem in self.tags_id:
+                    if elem == self.parking_patterns[self.current_pattern]["target_april_tag"]:
+                        tag_index = i
+                        break
+                corners = self.tags_coords[tag_index]
+                self.log(
+                    f"Current april tag position is {corners}"
+                )
+
         if movement_command == "NONE":
+            self.log(f"No need to move, current movement is {self.movement}")
             return
         elif movement_command == "STOP":
+            self.log("Parking is finished")
             self.status = False
             self.state = States.OFF
             self.movement = MovementType.OFF
@@ -149,10 +193,37 @@ class ParkingNode(DTROS):
             self.wheels_pub.publish(wheels_msg)
 
     def calculate_april_tag_next_move(self) -> str:
-        pass
+        if abs(self.x_optitrack - self.parking_patterns[self.current_pattern]["x_opt"]) \
+                < self.optitrack_positional_threshold.value:
+            self.state = States.WAITING_FOR_TIMER
+            self.movement = MovementType.APRIL_TAG
+            return "NONE"
+        else:
+            movement = "FORWARD" if (self.x_optitrack - self.parking_patterns[self.current_pattern]["x_opt"]) * np.cos(
+                self.theta_optitrack) > 0 else "BACK"
+            return movement
 
     def calculate_optitrack_next_move(self) -> str:
-        pass
+        if self.parking_patterns[self.current_pattern]["target_april_tag"] not in self.tags_id:
+            return self.parking_patterns[self.current_pattern]["initial_rotation"]
+        tag_index = 0
+        for i, elem in self.tags_id:
+            if elem == self.parking_patterns[self.current_pattern]["target_april_tag"]:
+                tag_index = i
+                break
+        corners = self.tags_coords[tag_index]
+        if abs(corners[0] - 2 * self.april_tag_check_position_x + corners[2]) > self.april_tag_centering_threshold:
+            movement = "RIGHT" if corners[0] - 2 * self.april_tag_check_position_x + corners[2] > 0 else "LEFT"
+            return movement
+        average_edge_length = 0
+        for i in range(4):
+            average_edge_length += np.sqrt(
+                (corners[2 * i] - corners[(2 * i + 2) % 8]) ** 2 + (corners[2 * i + 1] - corners[(2 * i + 3) % 8]) ** 2)
+        average_edge_length /= 4
+        if abs(average_edge_length - self.april_tag_bounding_box_size) > self.april_tag_average_size_threshold:
+            movement = "FORWARD" if average_edge_length - self.april_tag_bounding_box_size < 0 else "BACK"
+            return movement
+        return "STOP"
 
 
 if __name__ == "__main__":

@@ -11,3 +11,12 @@ parking_patterns:
     theta_opt: 0.0
     target_april_tag: 0
     initial_rotation: "RIGHT"
+
+optitrack_positional_threshold: 0.001
+optitrack_angle_threshold: 0.001
+april_tag_centering_threshold: 10
+april_tag_check_position_x: 0
+april_tag_check_position_y: 0
+april_tag_area_of_covering_threshold: 0.6
+april_tag_average_size_threshold: 0
+april_tag_bounding_box_size : 0
