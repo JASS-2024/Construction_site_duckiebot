@@ -1,0 +1,13 @@
+parking_patterns:
+  "1":
+    x_opt: 0.0
+    y_opt: 0.0
+    theta_opt: 0.0
+    target_april_tag: 0
+    initial_rotation: "LEFT"
+  "2":
+    x_opt: 0.0
+    y_opt: 0.0
+    theta_opt: 0.0
+    target_april_tag: 0
+    initial_rotation: "RIGHT"
