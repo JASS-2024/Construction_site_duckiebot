@@ -30,36 +30,20 @@
 	    <arg name="/LED/emitter" value="true"/>
 
   	</include>
-	<include file="$(find apriltag)/launch/apriltag_detector_node.launch">
-            <arg name="veh" value="$(arg veh)"/>
-	</include>
-	<include file="$(find obstacle_detection)/launch/obstacle_detection_node.launch">
-            <arg name="veh" value="$(arg veh)"/>
-	</include>
+  
+    <include file="$(find apriltag)/launch/apriltag_detector_node.launch">
+              <arg name="veh" value="$(arg veh)"/>
+    </include>
+  
+    <include file="$(find obstacle_detection)/launch/obstacle_detection_node.launch">
+              <arg name="veh" value="$(arg veh)"/>
+    </include>
 
-	<include file="$(find movement)/launch/movement_node.launch">
-            <arg name="veh" value="$(arg veh)"/>
-	</include>
+    <include file="$(find movement)/launch/movement_node.launch">
+              <arg name="veh" value="$(arg veh)"/>
+    </include>
 
-
-<!-- 	<include file="$(find trajectory)/launch/trajectory.launch"> -->
-<!--             <arg name="veh" value="$(arg veh)"/> -->
-<!-- 	</include> -->
-
-<!-- 	<include file="$(find planning)/launch/planning.launch"> -->
-<!--             <arg name="veh" value="$(arg veh)"/> -->
-<!-- 	</include> -->
-
-<!-- 	<include file="$(find planning_trajectory)/launch/planning_trajectory.launch"> -->
-<!--             <arg name="veh" value="$(arg veh)"/> -->
-<!-- 	</include> -->
-
-<!--     <include file="$(find pid_controller)/launch/pid_controller.launch"> -->
-<!--             <arg name="veh" value="$(arg veh)"/> -->
-<!-- 	</include> -->
-
-<!-- 	<include file="$(find led_signal)/launch/led_signal_node.launch"> -->
-<!--             <arg name="veh" value="$(arg veh)"/> -->
-<!-- 	</include> -->
-<!-- LIGHT_OFF -->
+    <include file="$(find timer)/launch/timer_node.launch">
+              <arg name="veh" value="$(arg veh)"/>
+    </include>
 </launch>

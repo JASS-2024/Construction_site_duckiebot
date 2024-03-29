@@ -15,7 +15,7 @@ from duckietown.dtros import DTROS, NodeType, TopicType, DTParam, ParamType
 from cv_bridge import CvBridge
 from sensor_msgs.msg import CompressedImage
 from geometry_msgs.msg import Transform, Vector3, Quaternion
-from duckietown_msgs.msg import BoolStamped
+from duckietown_msgs.msg import BoolStamped, AprilTagDetection, AprilTagDetectionArray
 from duckietown_msgs.srv import ChangePattern
 from std_msgs.msg import String
 
@@ -26,57 +26,31 @@ class AprilTagDetector(DTROS):
             node_name="apriltag_detector_node", node_type=NodeType.PERCEPTION
         )
         self.detector = apriltag.Detector(apriltag.DetectorOptions(families="tag36h11"))
-        self.start_detect = False
         self.bridge = CvBridge()
-        self._img_sub = rospy.Subscriber(
-            "~image", CompressedImage, self.cb_image, queue_size=1, buff_size="20MB"
-        )
-        self.marker_id_pub = rospy.Publisher(
-            '~tags_id', Int32MultiArray, queue_size=1
-        )
-
-        self.improved_image_pub = rospy.Publisher(
-            '~debug/improved_image/compressed', CompressedImage, queue_size=1, dt_topic_type=TopicType.DEBUG
-        )
-
-        self.change_pattern = rospy.Publisher(
-            '~change_pattern', String)
-
-        self.improved_image_pub_debug = rospy.Publisher(
-            '~debug/improved_image_debug/compressed', CompressedImage, queue_size=1, dt_topic_type=TopicType.DEBUG
-        )
-
-        self.stop_sub = rospy.Subscriber(
-            '~start_detection', BoolStamped, self.change_stop_val, queue_size=1
-        )
-
-        self.start_sub = rospy.Subscriber(
-            '~stop_detection', Bool, self.change_start_val, queue_size=1
-        )
-
-        self.switcher_sub = rospy.Subscriber(
-            '~switcher', Bool, self.update_switcher, queue_size=1
-        )
-
-
+        self.tag_queue = [False] * 5
         self.log('apriltag_init')
-        self.switcher = True
+        self._type_dict = rospy.get_param("~type_dict")
 
-    def update_switcher(self, msg):
-        self.switcher = True
 
-    def change_start_val(self, msg):
-        self.log("stop detection")
-        self.start_detect = False
+        # Publisher
 
-    def change_stop_val(self, msg):
-        if self.switcher:
-            self.start_detect = True
-            self.switcher = False
+        self.tags_message = rospy.Publisher( '~tags_array', AprilTagDetectionArray, queue_size=1)
+        self.change_pattern = rospy.Publisher('~change_pattern', String)
+
+
+        #Subscriber
+        self._img_sub = rospy.Subscriber( "~image", CompressedImage, self.process_image, queue_size=1, buff_size="20MB")
+
+
+
+    def send_LED_request(self, color = "RED"):
+        pattern = String()
+        pattern.data = color
+        self.change_pattern.publish(pattern)
 
     def _findAprilTags(self, image):
         '''
-        Gets the image in the RGB format, converts to grayscale, and detecta all apriltags
+        Gets the image in the RGB format, converts to grayscale, and detects all apriltags
         :param image: cv2 rgb format image
         :return: the list of the detections.
         The detections are in format
@@ -87,55 +61,35 @@ class AprilTagDetector(DTROS):
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         return self.detector.detect(gray)
 
-    def cb_image(self, msg):
-        # if self.start_detect:
-        if True:
-            img = self.bridge.compressed_imgmsg_to_cv2(msg)
-            # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            markers = self._findAprilTags(img)
-            # print(markers[0])
-            marker_id = [i.tag_id for i in markers]
-            # self.log(f'detected marker from apriltag {marker_id}')
-            self.imagemsg_removed_apriltag(img, markers, msg)
-            if len(marker_id) != 0:
-                self.log(f'detected marker from apriltag {marker_id}')
-                marker_msg = Int32MultiArray(data=marker_id)
-                self.marker_id_pub.publish(marker_msg)
-                # self.start_detect = False
-
-    def imagemsg_removed_apriltag(self, image, detections, msg_image):
-        '''
-        :param image:
-        :param detection:
-        :param msg_header:
-        :return:
-        '''
-        if len(detections) == 0:
-            if self.improved_image_pub.get_num_connections() > 0:
-                image_msg = self.bridge.cv2_to_compressed_imgmsg(image)
-                image_msg.header = msg_image.header
-                self.improved_image_pub.publish(image_msg)
-
+    def process_image(self, image_msg):
+        img = self.bridge.compressed_imgmsg_to_cv2(image_msg)
+        tag_list = self._findAprilTags(img)
+        detections_list = []
+        if tag_list:
+            self.send_LED_request()
+            print("found some apriltags")
         else:
-            pattern = String()
-            pattern.data = "RED"
-            self.change_pattern.publish(pattern)
-            print("Trying to change the pattern!!!!")
+            #if queue then turn off
+            pass
+        for tag in tag_list:
+            tag_msg = AprilTagDetection()
+            corners = tag.corners
 
+            tag_msg.tag_id = tag.tag_id
+            tag_msg.hamming = self._type_dict[str(tag_msg.tag_id)] if str(tag_msg.tag_id) in self._type_dict else 0
+            tag_msg.center = [(corners[0][0] + corners[1][0])/2, (corners[0][1] + corners[2][1])/2]
+            tag_msg.corners = [corners[0][0], corners[0][1], corners[1][0], corners[1][1], corners[2][0], corners[2][1], corners[3][0], corners[3][1]]
 
-            resulted_image = image.copy()
-            marker = detections[0]
-            # print(marker)
-            cv2.fillPoly(resulted_image, [marker.corners.astype(np.int32)], (0, 0, 0))
-            image_msg = self.bridge.cv2_to_compressed_imgmsg(resulted_image)
-            image_msg.header = msg_image.header
-            try:
-                self.improved_image_pub.publish(image_msg)
-            except:
-                self.improved_image_pub_debug.publish(msg_image)
+            # print(tag.tag_id)
+            # print(tag_msg)
+
+            detections_list.append(tag_msg)
+        tags_message = AprilTagDetectionArray()
+        tags_message.header = image_msg.header
+        tags_message.detections = detections_list
+        self.tags_message.publish(tags_message)
 
 
 if __name__ == "__main__":
     node = AprilTagDetector()
-    # spin forever
     rospy.spin()
