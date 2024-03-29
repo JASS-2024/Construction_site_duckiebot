@@ -85,19 +85,25 @@ LED_protocol:
       frequency_mask: []
       frequency:  0
 
-    OBSTACLE_ALERT:
+    PURPLE:
       color_mask: []
-      color_list: ["red","yellow","red","yellow","red"]
+      color_list: [ "purple","purple","purple","purple","purple"]
 #      frequency_mask: []
 #      frequency: 0
-      frequency_mask: [0,1,0,1,0]
-      frequency:  *f1
+      frequency_mask: [1,1,1,1,1]
+      frequency:  0
 
-    OBSTACLE_STOPPED:
+    OBSTACLE_07:
       color_mask: []
-      color_list: ["white","red","white","red","white"]
-      frequency_mask: [0,1,0,1,0]
-      frequency:  *f2
+      color_list: [  "blue","purple","red","green","yellow"]
+      frequency_mask: [1,1,1,1,1]
+      frequency:  0.7
+
+    OBSTACLE_2:
+      color_mask: [ ]
+      color_list: [ "blue","purple","red","green","yellow" ]
+      frequency_mask: [1,1,1,1,1]
+      frequency: 4
 
     POPO:
       color_mask: []
