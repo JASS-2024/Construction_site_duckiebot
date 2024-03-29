@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>obstacle_detection</name>
+  <name>parking</name>
   <version>1.0.0</version>
-  <description>The package containing obstacle detection</description>
+  <description>The package containing parking</description>
 
   <author email="lelikk2002@gmail.com">Ilia Nechaev</author>
   <maintainer email='2003asf@gmail.com'>Alexandra Fedorova</maintainer>
