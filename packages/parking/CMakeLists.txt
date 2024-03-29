@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(obstacle_detection)
+project(parking)
 
 
 find_package(catkin REQUIRED COMPONENTS

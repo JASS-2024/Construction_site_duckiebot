@@ -37,6 +37,10 @@
             <arg name="veh" value="$(arg veh)"/>
 	</include>
 
+	<include file="$(find parking)/launch/parking_node.launch">
+            <arg name="veh" value="$(arg veh)"/>
+	</include>
+
 
 <!-- 	<include file="$(find trajectory)/launch/trajectory.launch"> -->
 <!--             <arg name="veh" value="$(arg veh)"/> -->
