@@ -85,13 +85,13 @@ LED_protocol:
       frequency_mask: []
       frequency:  0
 
-    OBSTACLE_4:
+    PURPLE:
       color_mask: []
-      color_list: [ "blue","purple","red","green","yellow"]
+      color_list: [ "purple","purple","purple","purple","purple"]
 #      frequency_mask: []
 #      frequency: 0
       frequency_mask: [1,1,1,1,1]
-      frequency:  10
+      frequency:  0
 
     OBSTACLE_07:
       color_mask: []

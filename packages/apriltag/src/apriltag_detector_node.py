@@ -79,12 +79,12 @@ class AprilTagDetector(DTROS):
             tag_msg.tag_id = tag.tag_id
 
 
-            if tag_msg.tag_id == 5:
-                self.send_LED_request("OBSTACLE_4")
-            elif  tag_msg.tag_id == 67:
-                self.send_LED_request("OBSTACLE_2")
-            elif tag_msg.tag_id == 8:
-                self.send_LED_request("OBSTACLE_07")
+            if tag_msg.tag_id == 239:
+                self.send_LED_request("RED")
+            elif  tag_msg.tag_id == 30:
+                self.send_LED_request("PURPLE")
+            # elif tag_msg.tag_id == 8:
+            #     self.send_LED_request("OBSTACLE_07")
 
 
             tag_msg.hamming = self._type_dict[str(tag_msg.tag_id)] if str(tag_msg.tag_id) in self._type_dict else 0
