@@ -1,6 +1,6 @@
 # LIST YOUR PYTHON3 PACKAGES HERE
 apriltag
-paho-mqtt>=1.2
+paho-mqtt
 pymongo
 pytest
 pyyaml
