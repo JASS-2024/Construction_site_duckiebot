@@ -27,7 +27,8 @@ class AprilTagDetector(DTROS):
         )
         self.detector = apriltag.Detector(apriltag.DetectorOptions(families="tag36h11"))
         self.bridge = CvBridge()
-        self.tag_queue = [False] * 5
+        self.tag_queue = [False] * 10
+        self.queue = False
         self.log('apriltag_init')
         self._type_dict = rospy.get_param("~type_dict")
 
@@ -36,6 +37,7 @@ class AprilTagDetector(DTROS):
 
         self.tags_message = rospy.Publisher( '~tags_array', AprilTagDetectionArray, queue_size=1)
         self.change_pattern = rospy.Publisher('~change_pattern', String)
+        # self.changePattern = rospy.ServiceProxy("~set_pattern", ChangePattern)
 
 
         #Subscriber
@@ -47,6 +49,9 @@ class AprilTagDetector(DTROS):
         pattern = String()
         pattern.data = color
         self.change_pattern.publish(pattern)
+        # pattern = ChangePattern()
+        # pattern.pattern_name = color
+        # self.changePattern(pattern)
 
     def _findAprilTags(self, image):
         '''
@@ -65,17 +70,23 @@ class AprilTagDetector(DTROS):
         img = self.bridge.compressed_imgmsg_to_cv2(image_msg)
         tag_list = self._findAprilTags(img)
         detections_list = []
-        if tag_list:
-            self.send_LED_request()
-            print("found some apriltags")
-        else:
-            #if queue then turn off
-            pass
+
+
         for tag in tag_list:
             tag_msg = AprilTagDetection()
             corners = tag.corners
 
             tag_msg.tag_id = tag.tag_id
+
+
+            if tag_msg.tag_id == 5:
+                self.send_LED_request("OBSTACLE_4")
+            elif  tag_msg.tag_id == 67:
+                self.send_LED_request("OBSTACLE_2")
+            elif tag_msg.tag_id == 8:
+                self.send_LED_request("OBSTACLE_07")
+
+
             tag_msg.hamming = self._type_dict[str(tag_msg.tag_id)] if str(tag_msg.tag_id) in self._type_dict else 0
             tag_msg.center = [(corners[0][0] + corners[1][0])/2, (corners[0][1] + corners[2][1])/2]
             tag_msg.corners = [corners[0][0], corners[0][1], corners[1][0], corners[1][1], corners[2][0], corners[2][1], corners[3][0], corners[3][1]]
@@ -84,6 +95,19 @@ class AprilTagDetector(DTROS):
             # print(tag_msg)
 
             detections_list.append(tag_msg)
+
+        if tag_list:
+            self.tag_queue.pop()
+            self.tag_queue.append(True)
+            self.queue = True
+        else:
+            self.tag_queue.pop()
+            self.tag_queue.append(False)
+            if not any(self.tag_queue) and  self.queue:
+                self.send_LED_request("light_off")
+                self.queue = False
+
+
         tags_message = AprilTagDetectionArray()
         tags_message.header = image_msg.header
         tags_message.detections = detections_list
