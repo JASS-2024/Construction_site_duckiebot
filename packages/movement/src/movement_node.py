@@ -10,11 +10,11 @@ from duckietown_msgs.msg import WheelsCmdStamped
 from std_msgs.msg import String
 
 
-class ParkingNode(DTROS):
+class MovementNode(DTROS):
 
 
     def __init__(self, node_name):
-        super(ParkingNode, self).__init__(node_name=node_name, node_type=NodeType.DRIVER)
+        super(MovementNode, self).__init__(node_name=node_name, node_type=NodeType.DRIVER)
 
         # Initialize params
         self.params = dict()
@@ -91,6 +91,6 @@ class ParkingNode(DTROS):
 
 if __name__ == "__main__":
     # Initialize the node
-    parking_node = ParkingNode(node_name="parking_node")
+    parking_node = MovementNode(node_name="movement_node")
     # Keep it spinning
     rospy.spin()

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(parking)
+project(movement)
 
 
 find_package(catkin REQUIRED COMPONENTS
