@@ -71,7 +71,6 @@ class AprilTagDetector(DTROS):
         tag_list = self._findAprilTags(img)
         detections_list = []
 
-
         for tag in tag_list:
             tag_msg = AprilTagDetection()
             corners = tag.corners

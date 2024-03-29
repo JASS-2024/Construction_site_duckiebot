@@ -250,6 +250,7 @@ class LEDEmitterNode(DTROS):
         Args:
             msg: you can get requested pattern name and optionally flashing through msg.pattern_name.data
         """
+
         data = msg.data
         # data = msg.pattern_name
         print("Printing the received data:" + str(data))
@@ -265,6 +266,7 @@ class LEDEmitterNode(DTROS):
         pattern_name = str(data).replace("'", "").replace("\"", "")
         # print(pattern_name in self._LED_protocol["signals"])
         # print()
+
 
         #if the pattern is listed in the configs
         try:

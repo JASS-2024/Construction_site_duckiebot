@@ -1,0 +1,20 @@
+<launch>
+	<arg name="veh"/>
+	<arg name="param_file_name" default="default" doc="Specify a param file. ex:megaman"/>
+	<arg name="pkg_name" default="parking" doc="name of the package"/>
+	<arg name="node_name" default="parking_node" doc="name of the node"/>
+
+        <group ns="$(arg veh)">
+	    <node  pkg="$(arg pkg_name)" type="$(arg node_name).py" name="$(arg node_name)" output="screen">
+	        <rosparam command="load" file="$(find parking)/config/$(arg node_name)/$(arg param_file_name).yaml"/>
+	        <remap from="parking_node/april_tags" to="apriltag_detector_node/tags_array"/>
+	        <remap from="parking_node/wheels_result" to="movement_node/move_stop"/>
+	        <remap from="parking_node/wheels" to="movement_node/make_move_name"/>
+	        <remap from="parking_node/optitrack" to="mqtt_node/telemetry"/>
+	        <remap from="parking_node/timer" to="timer_node/timer"/>
+<!-- 	        TODO: replace after finishing FSM node                                                               -->
+<!-- 	        <remap from="parking_node/fsm_signal" to=""/>                                                        -->
+<!--            <remap from="parking_node/fsm_result" to=""/>                                                        -->
+	    </node>
+	</group>
+</launch>
