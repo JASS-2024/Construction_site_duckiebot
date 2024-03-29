@@ -5,8 +5,8 @@ from catkin_pkg.python_setup import generate_distutils_setup
 
 # fetch values from package.xml
 setup_args = generate_distutils_setup(
-    packages=["line_detector"],
-    package_dir={"": "include"},
+    packages=["mqtt"],
+    package_dir={},
 )
 
 setup(**setup_args)

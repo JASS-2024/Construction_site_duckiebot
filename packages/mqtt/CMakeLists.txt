@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(line_detector)
+project(mqtt)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp

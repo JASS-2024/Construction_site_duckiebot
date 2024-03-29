@@ -126,6 +126,7 @@ class ObstacleDetectorNode(DTROS):
         self.pub_stop.publish(msg)
 
 
+
         #Publishing the masked image
         if self.pub_obstacle_image.get_num_connections() > 0:
             target_areas_msg = self.bridge.cv2_to_compressed_imgmsg(target_areas)
