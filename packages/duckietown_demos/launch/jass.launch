@@ -32,30 +32,30 @@
 
   
     <include file="$(find apriltag)/launch/apriltag_detector_node.launch">
-              <arg name="veh" value="$(arg veh)"/>
+        <arg name="veh" value="$(arg veh)"/>
     </include>
   
     <include file="$(find obstacle_detection)/launch/obstacle_detection_node.launch">
-              <arg name="veh" value="$(arg veh)"/>
+        <arg name="veh" value="$(arg veh)"/>
     </include>
 
     <include file="$(find movement)/launch/movement_node.launch">
-              <arg name="veh" value="$(arg veh)"/>
+        <arg name="veh" value="$(arg veh)"/>
     </include>
 
     <include file="$(find timer)/launch/timer_node.launch">
-              <arg name="veh" value="$(arg veh)"/>
+        <arg name="veh" value="$(arg veh)"/>
     </include>
 
     <include file="$(find mqtt)/launch/mqtt_node.launch">
-              <arg name="veh" value="$(arg veh)"/>
+        <arg name="veh" value="$(arg veh)"/>
     </include>
   
     <include file="$(find parking)/launch/parking_node.launch">
-              <arg name="veh" value="$(arg veh)"/>
+        <arg name="veh" value="$(arg veh)"/>
     </include>
 
     <include file="$(find rectangle_test_node)/launch/rectangle_test_node.launch">
-            <arg name="veh" value="$(arg veh)"/>
-	  </include>
+        <arg name="veh" value="$(arg veh)"/>
+    </include>
 </launch>
