@@ -30,6 +30,7 @@
 
   	</include>
 
+
   
     <include file="$(find apriltag)/launch/apriltag_detector_node.launch">
               <arg name="veh" value="$(arg veh)"/>
@@ -55,4 +56,7 @@
               <arg name="veh" value="$(arg veh)"/>
     </include>
 
+    <include file="$(find rectangle_test_node)/launch/rectangle_test_node.launch">
+            <arg name="veh" value="$(arg veh)"/>
+	  </include>
 </launch>
