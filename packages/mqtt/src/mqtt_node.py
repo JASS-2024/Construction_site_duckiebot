@@ -28,20 +28,22 @@ class MQTTNode(DTROS):
 
 
         # Getting params from config default.yaml
-        self.object_name = DTParam("~object_name", param_type=ParamType.STRING),
-        self.mqtt_broker_ip = DTParam("~mqtt_broker_ip", param_type=ParamType.STRING),
+        self.object_name = DTParam("~object_name", param_type=ParamType.STRING)
+        self.mqtt_broker_ip = DTParam("~mqtt_broker_ip", param_type=ParamType.STRING)
         self.mqtt_topic = DTParam("~mqtt_topic", param_type=ParamType.STRING)
 
         # Adjusting mqtt_topic using our object_name at the '.../*/...'
-        self.mqtt_topic = self.mqtt_topic.replace('*', self.object_name)
+        self.mqtt_topic_string = self.mqtt_topic.value.replace('*', self.object_name.value)
 
         # MQTT Client setup
         self.mqtt_client = mqtt.Client(callback_api_version=CallbackAPIVersion.VERSION1) # ATTENTION: This API version (1) is deprecated. Currentrly using just because it works
         self.mqtt_client.on_connect = self.on_connect
         self.mqtt_client.on_message = self.on_message
-        self.log(f'Connecting to {self.mqtt_broker_ip}')
-        self.mqtt_client.connect(self.mqtt_broker_ip, 1883, 60)
+        self.log(f'Connecting to {self.mqtt_broker_ip.value}')
+        self.mqtt_client.connect(self.mqtt_broker_ip.value, 1883, 60)
         self.mqtt_client.loop_start()
+
+        self.is_first = True
 
         # Construct publisher
         self.pub_telemetry = rospy.Publisher("~telemetry", Float32MultiArray, queue_size=1)
@@ -50,7 +52,7 @@ class MQTTNode(DTROS):
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
             self.log("Connected to MQTT Broker!")
-            self.mqtt_client.subscribe(self.mqtt_topic)
+            self.mqtt_client.subscribe(self.mqtt_topic_string)
         else:
             self.log(f"Failed to connect, return code {rc}")
 
@@ -64,8 +66,10 @@ class MQTTNode(DTROS):
             telemetry_msg = Float32MultiArray()
             telemetry_msg.data = [coordinates['x'], coordinates['y'], yaw_in_radians, nanoseconds]
             self.pub_telemetry.publish(telemetry_msg)
-            print(telemetry_msg.data)
-            print(telemetry_msg)
+            if self.is_first:
+                print(telemetry_msg.data)
+                print(telemetry_msg)
+                self.is_first = False
         except Exception as e:
             rospy.logerr(f"Error in on_message: {e}")
 

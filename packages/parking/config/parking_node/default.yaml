@@ -1,8 +1,8 @@
 parking_patterns:
   "1":
     x_opt: 0.0
-    y_opt: 0.0
-    target_april_tag: 0
+    y_opt: 8.5413
+    target_april_tag: 30
     initial_rotation: "LEFT"
   "2":
     x_opt: 0.0
@@ -12,9 +12,9 @@ parking_patterns:
 
 optitrack_positional_threshold: 0.001
 optitrack_angle_threshold: 0.001
-april_tag_centering_threshold: 10
-april_tag_check_position_x: 0
-april_tag_check_position_y: 0
+april_tag_centering_threshold: 5
+april_tag_check_position_x: 334
+april_tag_check_position_y: 138
 april_tag_area_of_covering_threshold: 0.6
-april_tag_average_size_threshold: 0
-april_tag_bounding_box_size : 0
+april_tag_average_size_threshold: 20
+april_tag_bounding_box_size : 200

@@ -76,8 +76,8 @@ class AprilTagDetector(DTROS):
 
             tag_msg.tag_id = tag.tag_id
             tag_msg.hamming = self._type_dict[str(tag_msg.tag_id)] if str(tag_msg.tag_id) in self._type_dict else 0
-            tag_msg.center = [(corners[0][0] + corners[1][0])/2, (corners[0][1] + corners[2][1])/2]
-            tag_msg.corners = [corners[0][0], corners[0][1], corners[1][0], corners[1][1], corners[2][0], corners[2][1], corners[3][0], corners[3][1]]
+            tag_msg.center = [(corners[2][0] + corners[0][0])/2, (corners[0][1] + corners[2][1])/2]
+            tag_msg.corners = [corners[3][0], corners[3][1], corners[0][0], corners[0][1], corners[1][0], corners[1][1], corners[2][0], corners[2][1]]
 
             # print(tag.tag_id)
             # print(tag_msg)
