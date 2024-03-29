@@ -2,7 +2,7 @@
 <package>
   <name>movement</name>
   <version>1.0.0</version>
-  <description>The package containing parking</description>
+  <description>The package containing movement node</description>
 
   <author email="lelikk2002@gmail.com">Ilia Nechaev</author>
   <maintainer email='2003asf@gmail.com'>Alexandra Fedorova</maintainer>
