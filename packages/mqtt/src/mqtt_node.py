@@ -25,13 +25,15 @@ class MQTTNode(DTROS):
           """
 
         super(MQTTNode, self).__init__(node_name=node_name, node_type=NodeType.PERCEPTION)
-        self.params = {
-            "object_name": DTParam("~object_name", param_type=ParamType.STRING),
-            "mqtt_broker_ip": DTParam("~mqtt_broker_ip", param_type=ParamType.STRING),
-            "mqtt_topic": DTParam("~mqtt_topic", param_type=ParamType.STRING)
-        }
-        self.mqtt_broker_ip = rospy.get_param('~mqtt_broker_ip')
-        self.mqtt_topic = rospy.get_param('~mqtt_topic')
+
+
+        # Getting params from config default.yaml
+        self.object_name = DTParam("~object_name", param_type=ParamType.STRING),
+        self.mqtt_broker_ip = DTParam("~mqtt_broker_ip", param_type=ParamType.STRING),
+        self.mqtt_topic = DTParam("~mqtt_topic", param_type=ParamType.STRING)
+
+        # Adjusting mqtt_topic using our object_name at the '.../*/...'
+        self.mqtt_topic = self.mqtt_topic.replace('*', self.object_name)
 
         # MQTT Client setup
         self.mqtt_client = mqtt.Client(callback_api_version=CallbackAPIVersion.VERSION1) # ATTENTION: This API version (1) is deprecated. Currentrly using just because it works

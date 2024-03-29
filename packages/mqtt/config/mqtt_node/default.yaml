@@ -1,4 +1,8 @@
-# object_name is not being used right now (!)
-object_name: '10' # Your object's name
-mqtt_broker_ip: '192.168.1.77' # IP Address for mqtt broker
-mqtt_topic: 'vehicle/11/status' # Topic name that you want to subscribe to
+# Your object's name
+object_name: '10'
+
+# IP Address for mqtt broker
+mqtt_broker_ip: '192.168.1.77'
+
+# Topic name that you want to subscribe to. Star (*) will be changed to the object name
+mqtt_topic: 'vehicle/*/status'
