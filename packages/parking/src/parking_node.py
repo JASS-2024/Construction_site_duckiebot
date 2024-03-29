@@ -27,10 +27,52 @@ class MovementType(Enum):
 
 
 class ParkingNode(DTROS):
+    """
+    Configuration:
+        ~parking_patterns (dict):
+            "pattern_number":
+                    x_opt (float): X coordinate of point, where the turn should be performed
+
+                    y_opt (float): Y coordinate of point, where the turn should be performed
+
+                    target_april_tag (int): Id of the apriltag that is used as final marker
+
+                    initial_rotation (str): Rotation that should be performed after reaching the (x_opt, y_opt) position
+
+        ~optitrack_positional_threshold (float): The maximum allowed difference between position provided by Optitrack and target position
+
+        ~optitrack_angle_threshold (float): The maximum allowed difference between angle provided by Optitrack and target angle
+
+        ~april_tag_centering_threshold (float): The maximum allowed difference between apriltag center and real center of the picture
+
+        ~april_tag_check_position_x (float): X coordinate of center of target bounding box of the apriltag
+
+        ~april_tag_check_position_y (float): Y coordinate of center of target bounding box of the apriltag
+
+        ~april_tag_area_of_covering_threshold (float): percentage of the bounding box area, which should be covered by apriltag
+
+        ~april_tag_average_size_threshold (float): The maximum allowed difference between average size of apriltag edge and bounding box's edge
+
+        ~april_tag_bounding_box_size (float): length of the apriltag bounding box edge
+
+    Publishers:
+        ~wheels (std_msgs::msg::String): Command for movement node to perform a small move
+
+        ~fsm_result (duckietown_msgs::msg::BoolStamped): Signal that node is finished its process
+
+    Subscribers:
+        ~april_tags" (duckietown_msgs::msg::AprilTagDetectionArray): Receive list of the detected apriltags
+
+        ~wheels_result" (duckietown_msgs::msg::BoolStamped): Receive signal from wheels that action was executed
+
+        ~optitrack" (std_msgs::msg::Float32MultiArray): Receive positional information from the Optitrack
+
+        ~timer" (duckietown_msgs::msg::BoolStamped): Receive signal every timer_node/signal seconds
+
+        ~fsm_signal" (std_msgs::msg::Int32): Receive signal to start work and number of pattern to execute
+    """
 
     def __init__(self, node_name):
-
-        # Initialize the DTROS parent class
         super(ParkingNode, self).__init__(node_name=node_name, node_type=NodeType.PERCEPTION)
 
         # Read parameters:
@@ -66,7 +108,6 @@ class ParkingNode(DTROS):
         self.fsm_result = rospy.Publisher("~fsm_result", BoolStamped, queue_size=1)
 
         # Variables
-
         self.optitrack_ts = rospy.Time.now()
         self.april_tag_ts = rospy.Time.now()
         self.wheels_ts = rospy.Time.now()
@@ -227,7 +268,5 @@ class ParkingNode(DTROS):
 
 
 if __name__ == "__main__":
-    # Initialize the node
     parking_node = ParkingNode(node_name="parking_node")
-    # Keep it spinning
     rospy.spin()

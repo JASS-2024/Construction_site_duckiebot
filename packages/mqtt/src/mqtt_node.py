@@ -62,7 +62,7 @@ class MQTTNode(DTROS):
             timestamp = data['data']['timestamp']
             nanoseconds = self.getNanoSec(timestamp)
             telemetry_msg = Float32MultiArray()
-            telemetry_msg.data = [coordinates['x'], coordinates['y'], yaw_in_radians, timestamp]
+            telemetry_msg.data = [coordinates['x'], coordinates['y'], yaw_in_radians, nanoseconds]
             self.pub_telemetry.publish(telemetry_msg)
             print(telemetry_msg.data)
             print(telemetry_msg)
