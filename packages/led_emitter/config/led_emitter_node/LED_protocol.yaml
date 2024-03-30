@@ -67,11 +67,23 @@ LED_protocol:
       frequency_mask: []
       frequency:  0
 
+    YELLOW:
+      color_mask: [ ]
+      color_list: "yellow"
+      frequency_mask: [ ]
+      frequency: 0
+
     BLUE:
       color_mask: []
       color_list: "blue"
       frequency_mask: []
       frequency:  0
+
+    PINK:
+      color_mask: [ ]
+      color_list: "pink"
+      frequency_mask: [ ]
+      frequency: 0
 
     LIGHT_OFF:
       color_mask: []

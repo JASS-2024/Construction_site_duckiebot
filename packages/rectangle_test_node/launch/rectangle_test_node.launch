@@ -9,6 +9,7 @@
 	        <rosparam command="load" file="$(find rectangle_test_node)/config/$(arg node_name)/$(arg param_file_name).yaml"/>
             <remap from="rectangle_test_node/duckie_image" to="camera_node/image/compressed" />
 
+
 	    </node>
 	</group>
 </launch>

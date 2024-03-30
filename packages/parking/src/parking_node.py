@@ -110,6 +110,7 @@ class ParkingNode(DTROS):
         # Publisher
         self.wheels_pub = rospy.Publisher("~wheels", String, queue_size=1)
         self.fsm_result = rospy.Publisher("~fsm_result", BoolStamped, queue_size=1)
+        self.change_pattern = rospy.Publisher('~change_pattern', String)
 
         # Construct publishers
         self.pub_rectangle = rospy.Publisher(
@@ -143,6 +144,11 @@ class ParkingNode(DTROS):
         self.current_pattern = ""
 
         self.log("Initialized!")
+
+    def send_LED_request(self, color = "RED"):
+        pattern = String()
+        pattern.data = color
+        self.change_pattern.publish(pattern)
 
     def fsm_callback(self, msg):
         self.log("Received FSM")
@@ -280,6 +286,7 @@ class ParkingNode(DTROS):
             self.log(f"No need to move, current movement is {self.movement}")
             return
         elif movement_command == "STOP":
+            self.send_LED_request("PINK")
             self.log("Parking is finished")
             self.status = False
             self.state = States.OFF
@@ -312,6 +319,7 @@ class ParkingNode(DTROS):
     def calculate_april_tag_next_move(self) -> str:
         if self.parking_patterns[self.current_pattern]["target_april_tag"] not in self.tags_id:
             self.log("Exiting first if")
+            self.send_LED_request("WHITE")
             return self.parking_patterns[self.current_pattern]["initial_rotation"]
         tag_index = 0
         for i, elem in enumerate(self.tags_id):
@@ -321,6 +329,7 @@ class ParkingNode(DTROS):
         corners = self.tags_coords[tag_index]
         centers = self.centers[tag_index]
         if abs(centers[0] - self.april_tag_check_position_x.value) > self.april_tag_centering_threshold.value:
+            self.send_LED_request("BLUE")
             movement = "RIGHT" if centers[0] - self.april_tag_check_position_x.value > 0 else "LEFT"
             self.log(f"center_x {centers[0]}")
             self.log(f"desired_position {self.april_tag_check_position_x.value}")
@@ -332,6 +341,7 @@ class ParkingNode(DTROS):
                 (corners[2 * i] - corners[(2 * i + 2) % 8]) ** 2 + (corners[2 * i + 1] - corners[(2 * i + 3) % 8]) ** 2)
         average_edge_length /= 4
         if abs(average_edge_length - self.april_tag_bounding_box_size.value) > self.april_tag_average_size_threshold.value:
+            self.send_LED_request("GREEN")
             movement = "FORWARD" if average_edge_length - self.april_tag_bounding_box_size.value < 0 else "BACK"
             self.log("Exiting third if")
             return movement

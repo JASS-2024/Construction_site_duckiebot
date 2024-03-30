@@ -16,5 +16,5 @@ april_tag_centering_threshold: 80
 april_tag_check_position_x: 334
 april_tag_check_position_y: 138
 april_tag_area_of_covering_threshold: 0.6
-april_tag_average_size_threshold: 20
+april_tag_average_size_threshold: 30
 april_tag_bounding_box_size : 200

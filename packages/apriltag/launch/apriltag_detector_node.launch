@@ -16,7 +16,8 @@
         <node name="$(arg node_name)" pkg="$(arg pkg_name)" type="$(arg node_name).py" output="screen">
             <rosparam command="load" file="$(find apriltag)/config/$(arg param_file_name).yaml"/>
             <remap from="apriltag_detector_node/image" to="camera_node/image/compressed" />
-            <remap from="apriltag_detector_node/change_pattern" to="led_emitter_node/change_pattern"/>
+            <remap from="apriltag_detector_node/image" to="camera_node/image/compressed" />
+            <remap from="apriltag_detector_node/fsm_signal" to="parking_node/fsm_signal"/>
         </node>
 </group>
 </launch>
