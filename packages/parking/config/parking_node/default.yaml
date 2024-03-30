@@ -12,7 +12,7 @@ parking_patterns:
 
 optitrack_positional_threshold: 0.001
 optitrack_angle_threshold: 0.001
-april_tag_centering_threshold: 5
+april_tag_centering_threshold: 80
 april_tag_check_position_x: 334
 april_tag_check_position_y: 138
 april_tag_area_of_covering_threshold: 0.6

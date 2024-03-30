@@ -12,6 +12,8 @@
 	        <remap from="parking_node/wheels" to="movement_node/make_move_name"/>
 	        <remap from="parking_node/optitrack" to="mqtt_node/telemetry"/>
 	        <remap from="parking_node/timer" to="timer_node/timer"/>
+            <remap from="parking_node/duckie_image" to="camera_node/image/compressed" />
+
 <!-- 	        TODO: replace after finishing FSM node                                                               -->
 <!-- 	        <remap from="parking_node/fsm_signal" to=""/>                                                        -->
 <!--            <remap from="parking_node/fsm_result" to=""/>                                                        -->

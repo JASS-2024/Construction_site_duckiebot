@@ -3,9 +3,12 @@ import numpy as np
 import rospy
 import cv2
 from enum import Enum
+from cv_bridge import CvBridge
+
 
 from duckietown.dtros import DTROS, NodeType, TopicType, DTParam, ParamType
 from duckietown_msgs.msg import BoolStamped, AprilTagDetectionArray
+from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import Float32MultiArray, String, Int32
 from duckietown_msgs.srv import SetFSMState, SetFSMStateResponse, ChangePattern
 
@@ -18,7 +21,8 @@ class States(Enum):
     WAITING_FOR_WHEELS = 3
     WAITING_FOR_APRIL_TAG = 4
     WAITING_FOR_OPTITRACK = 5
-
+    WAITING_FOR_IMAGE_CALLBACK = 6
+    WAITING_FOR_TIMER_WITHOUT_IMAGE = 7
 
 class MovementType(Enum):
     OFF = 1
@@ -107,6 +111,18 @@ class ParkingNode(DTROS):
         self.wheels_pub = rospy.Publisher("~wheels", String, queue_size=1)
         self.fsm_result = rospy.Publisher("~fsm_result", BoolStamped, queue_size=1)
 
+        # Construct publishers
+        self.pub_rectangle = rospy.Publisher(
+            "~debug/atag/compressed", CompressedImage, queue_size=1
+        )
+
+        # Construct subscribers
+        self.duckie_image = rospy.Subscriber(
+            "~duckie_image", CompressedImage, self.processImageMessage, buff_size=10000000, queue_size=1
+        )
+
+        self.bridge = CvBridge()
+
         # Variables
         self.optitrack_ts = rospy.Time.now()
         self.april_tag_ts = rospy.Time.now()
@@ -129,6 +145,7 @@ class ParkingNode(DTROS):
         self.log("Initialized!")
 
     def fsm_callback(self, msg):
+        self.log("Received FSM")
         if self.status:
             self.log("Node is already active, message ignored")
             fsm_message = BoolStamped()
@@ -146,19 +163,55 @@ class ParkingNode(DTROS):
         self.log("Node started")
         self.status = True
         self.current_pattern = str(msg.data)
-        self.state = States.WAITING_FOR_OPTITRACK
-        self.movement = MovementType.OPTITRACK
+        self.state = States.WAITING_FOR_APRIL_TAG
+        self.movement = MovementType.APRIL_TAG
+
+    def processImageMessage(self, image_msg):
+        if not self.state == States.WAITING_FOR_IMAGE_CALLBACK:
+            return
+        self.state = States.WAITING_FOR_TIMER_WITHOUT_IMAGE
+        self.log("Received image callback")
+        if len(self.centers) == 0:
+            self.log("Exiting image callback without publishing")
+            return
+        #convert raw image file to cv2 image
+        try:
+            image = self.bridge.compressed_imgmsg_to_cv2(image_msg)
+        except ValueError as e:
+            self.logerr(f"Could not decode image: {e}")
+            return
+
+        half_side = self.april_tag_centering_threshold.value
+        top_left_x = int(self.centers[0][0] - half_side)
+        top_left_y = int(self.centers[0][1] - half_side)
+        bottom_right_x = int(self.centers[0][0] + half_side)
+        bottom_right_y = int(self.centers[0][1] + half_side)
+        image = cv2.rectangle(image, (top_left_x, top_left_y), (bottom_right_x, bottom_right_y), (0, 0, 0), -1)
+
+        top_left_x = int(self.april_tag_check_position_x.value - half_side)
+        top_left_y = int(self.april_tag_check_position_y.value - half_side)
+        bottom_right_x = int(self.april_tag_check_position_x.value + half_side)
+        bottom_right_y = int(self.april_tag_check_position_y.value + half_side)
+        image = cv2.rectangle(image, (top_left_x, top_left_y), (bottom_right_x, bottom_right_y), (255, 0, 0), -1)
+
+
+        #Publishing the masked image
+        # if self.pub_rectangle.get_num_connections() > 0:
+        target_areas_msg = self.bridge.cv2_to_compressed_imgmsg(image)
+        target_areas_msg.header = image_msg.header
+        self.pub_rectangle.publish(target_areas_msg)
 
     def optitrack_callback(self, msg: Float32MultiArray):
-        # self.log("Optitrack callback was called")
+        if self.status:
+            self.log("Optitrack callback was called")
         if not self.state == States.WAITING_FOR_OPTITRACK:
             return
-        # self.log("Got optitrack data")
+        self.log("Got optitrack data")
         self.optitrack_ts = rospy.Time.from_sec(msg.data[-1] / SEC_TO_NSEC)
         self.x_optitrack = msg.data[0]
         self.y_optitrack = msg.data[1]
         self.theta_optitrack = msg.data[2]
-        self.state = States.WAITING_FOR_TIMER
+        self.state = States.WAITING_FOR_TIMER_WITHOUT_IMAGE
 
     def april_tag_callback(self, msg: AprilTagDetectionArray):
         if not self.state == States.WAITING_FOR_APRIL_TAG:
@@ -177,6 +230,7 @@ class ParkingNode(DTROS):
         self.state = States.WAITING_FOR_TIMER
 
     def wheels_callback(self, msg):
+        self.log("Got callback from wheels")
         if not (self.state == States.WAITING_FOR_WHEELS):
             self.log("Got unexpected message from wheels")
             return
@@ -192,7 +246,7 @@ class ParkingNode(DTROS):
         self.timer_ts = msg.header.stamp
         if not self.status:
             return
-        if not (self.state == States.WAITING_FOR_TIMER):
+        if not (self.state == States.WAITING_FOR_TIMER or self.state == States.WAITING_FOR_TIMER_WITHOUT_IMAGE):
             return
         if self.movement == MovementType.OPTITRACK:
             movement_command = self.calculate_optitrack_next_move()
@@ -235,6 +289,11 @@ class ParkingNode(DTROS):
             fsm_message.header.stamp = rospy.Time.now()
             self.fsm_result.publish(fsm_message)
         else:
+            if self.movement == MovementType.APRIL_TAG and self.state == States.WAITING_FOR_TIMER:
+                self.state = States.WAITING_FOR_IMAGE_CALLBACK
+                self.log("Changed to image callback")
+                return
+            self.log("Published for wheels")
             wheels_msg = String()
             wheels_msg.data = movement_command
             self.state = States.WAITING_FOR_WHEELS
@@ -252,6 +311,7 @@ class ParkingNode(DTROS):
 
     def calculate_april_tag_next_move(self) -> str:
         if self.parking_patterns[self.current_pattern]["target_april_tag"] not in self.tags_id:
+            self.log("Exiting first if")
             return self.parking_patterns[self.current_pattern]["initial_rotation"]
         tag_index = 0
         for i, elem in enumerate(self.tags_id):
@@ -261,7 +321,10 @@ class ParkingNode(DTROS):
         corners = self.tags_coords[tag_index]
         centers = self.centers[tag_index]
         if abs(centers[0] - self.april_tag_check_position_x.value) > self.april_tag_centering_threshold.value:
-            movement = "RIGHT" if centers[0] - self.april_tag_check_position_x.value < 0 else "LEFT"
+            movement = "RIGHT" if centers[0] - self.april_tag_check_position_x.value > 0 else "LEFT"
+            self.log(f"center_x {centers[0]}")
+            self.log(f"desired_position {self.april_tag_check_position_x.value}")
+            self.log("Exiting second if")
             return movement
         average_edge_length = 0
         for i in range(4):
@@ -270,6 +333,7 @@ class ParkingNode(DTROS):
         average_edge_length /= 4
         if abs(average_edge_length - self.april_tag_bounding_box_size.value) > self.april_tag_average_size_threshold.value:
             movement = "FORWARD" if average_edge_length - self.april_tag_bounding_box_size.value < 0 else "BACK"
+            self.log("Exiting third if")
             return movement
         return "STOP"
 
