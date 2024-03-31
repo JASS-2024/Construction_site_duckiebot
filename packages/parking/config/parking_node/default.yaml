@@ -4,10 +4,10 @@ parking_patterns:
     y_opt: 8.5413
     target_april_tag: 30
     initial_rotation: "LEFT"
-  "2":
+  "-1":
     x_opt: 0.0
     y_opt: 0.0
-    target_april_tag: 0
+    target_april_tag: 239
     initial_rotation: "RIGHT"
 
 optitrack_positional_threshold: 0.001
@@ -17,4 +17,14 @@ april_tag_check_position_x: 334
 april_tag_check_position_y: 138
 april_tag_area_of_covering_threshold: 0.6
 april_tag_average_size_threshold: 20
-april_tag_bounding_box_size : 200
+april_tag_bounding_box_size : 180
+speed_changing_threshold: 100
+
+# Movement stack
+
+move_speed:  1
+rotation_speed:  0.3
+move_speed_slow: 0.5
+rotation_speed_slow: 0.3
+move_time:  0.05
+rotation_time: 0.05
