@@ -134,7 +134,7 @@ class LEDEmitterNode(DTROS):
         # )
         self.srv_hui= rospy.Service("~set_pattern", ChangePattern, lambda x:   ChangePatternResponse())#self.srvSetPattern)
 
-        # self.srv_set_pattern_ = rospy.Subscriber("~change_pattern", String, self.srvSetPattern, queue_size=1)
+        self.srv_set_pattern_ = rospy.Subscriber("~change_pattern", String, self.srvSetPattern, queue_size=1)
 
         # Scale intensity of the LEDs
         for name, c in self._LED_protocol["colors"].items():

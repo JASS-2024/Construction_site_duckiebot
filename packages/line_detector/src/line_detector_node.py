@@ -67,11 +67,11 @@ class LineDetectorNode(DTROS):
         super(LineDetectorNode, self).__init__(node_name=node_name, node_type=NodeType.PERCEPTION)
 
         # Publishers
-        self.pub_whites = rospy.Publisher(
-            "~request_white", Bool, queue_size=1
-        )
-
-        self.pub_whites.publish(Bool())
+        # self.pub_whites = rospy.Publisher(
+        #     "~request_white", Bool, queue_size=1
+        # )
+        #
+        # self.pub_whites.publish(Bool())
         self.debug = DTParam("~debug", param_type=ParamType.BOOL)
         self.isFirst = True
         if USE_DL:
@@ -164,12 +164,20 @@ class LineDetectorNode(DTROS):
         )
 
         # Subscribers
+        # self.sub_image = rospy.Subscriber(
+        #     "~image/compressed", CompressedImage, self.image_cb, buff_size=10000000, queue_size=1
+        # )
+        #
+        # self.sub_thresholds = rospy.Subscriber(
+        #     "~thresholds", AntiInstagramThresholds, self.thresholds_cb, queue_size=1
+        # )
+
         self.sub_image = rospy.Subscriber(
-            "~image/compressed", CompressedImage, self.image_cb, buff_size=10000000, queue_size=1
+            "~image/compressed", CompressedImage, None, buff_size=10000000, queue_size=1
         )
 
         self.sub_thresholds = rospy.Subscriber(
-            "~thresholds", AntiInstagramThresholds, self.thresholds_cb, queue_size=1
+            "~thresholds", AntiInstagramThresholds, None, queue_size=1
         )
 
     def thresholds_cb(self, thresh_msg):
@@ -419,3 +427,4 @@ if __name__ == "__main__":
     line_detector_node = LineDetectorNode(node_name="line_detector_node")
     # Keep it spinning to keep the node alive
     rospy.spin()
+

@@ -8,7 +8,6 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import CompressedImage, Image
 from duckietown_msgs.msg import BoolStamped
 from duckietown_msgs.srv import SetFSMState, SetFSMStateResponse, ChangePattern
-import time
 
 class TimerNode(DTROS):
     """
@@ -34,7 +33,7 @@ class TimerNode(DTROS):
             msg.header.stamp = rospy.Time.now()
             msg.data = True
             self.timer_pub.publish(msg)
-            time.sleep(self.interval.value)
+            rospy.sleep(self.interval.value)
 
 
 if __name__ == "__main__":
