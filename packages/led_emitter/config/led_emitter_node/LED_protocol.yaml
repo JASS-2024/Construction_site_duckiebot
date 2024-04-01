@@ -93,11 +93,11 @@ LED_protocol:
       frequency_mask: [1,1,1,1,1]
       frequency:  0
 
-    OBSTACLE_07:
+    PINK:
       color_mask: []
-      color_list: [  "blue","purple","red","green","yellow"]
-      frequency_mask: [1,1,1,1,1]
-      frequency:  0.7
+      color_list: "pink"
+      frequency_mask: []
+      frequency:  0
 
     OBSTACLE_2:
       color_mask: [ ]

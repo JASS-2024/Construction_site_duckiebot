@@ -8,6 +8,5 @@
 !dependencies-py3.txt
 !dev-requirements.txt
 !launchers
-packages/led_emitter
 # YOUR FILES LISTED BELOW THIS LINE (IMPORTANT: PREPEND !)
 # ----------------------------------------------------------------------------

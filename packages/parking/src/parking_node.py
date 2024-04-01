@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-import time
+# import time
 from typing import Optional
 
 import numpy as np
 import rospy
-import cv2
+# import cv2
 from enum import Enum
-from cv_bridge import CvBridge
+# from cv_bridge import CvBridge
 import os
 
 from duckietown.dtros import DTROS, NodeType, TopicType, DTParam, ParamType
 from duckietown_msgs.msg import BoolStamped, AprilTagDetectionArray, WheelsCmdStamped, WheelEncoderStamped
-from sensor_msgs.msg import CompressedImage
+# from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import Float32MultiArray, String, Int32
-from duckietown_msgs.srv import SetFSMState, SetFSMStateResponse, ChangePattern
+# from duckietown_msgs.srv import SetFSMState, SetFSMStateResponse, ChangePattern
 
 SEC_TO_NSEC = 1000000000
 
@@ -21,11 +21,7 @@ SEC_TO_NSEC = 1000000000
 class States(Enum):
     OFF = 1
     WAITING_FOR_TIMER = 2
-    WAITING_FOR_WHEELS = 3
     WAITING_FOR_APRIL_TAG = 4
-    # WAITING_FOR_OPTITRACK = 5
-    WAITING_FOR_IMAGE_CALLBACK = 6
-    WAITING_FOR_TIMER_WITHOUT_IMAGE = 7
     WAITING_FOR_LEFT_ENCODER = 8
     WAITING_FOR_RIGHT_ENCODER = 9
 
@@ -131,8 +127,14 @@ class ParkingNode(DTROS):
         self.move_time = DTParam("~move_time", param_type=ParamType.FLOAT, min_value=0, max_value=1)
         self.rotation_time = DTParam("~rotation_time", param_type=ParamType.FLOAT, min_value=0, max_value=1)
 
+        self.move_time_slow = DTParam("~move_time_slow", param_type=ParamType.FLOAT, min_value=0, max_value=1)
+        self.rotation_time_slow = DTParam("~rotation_time_slow", param_type=ParamType.FLOAT, min_value=0, max_value=1)
+
         self.sleep_after_move = DTParam('~sleep_after_move', param_type=ParamType.FLOAT,
                                                 min_value=0, max_value=10)
+        self.counter = 0
+        self.LED_light = "BLUE"
+
 
         # Topic for movement
         vehicle_name = os.environ['VEHICLE_NAME']
@@ -145,9 +147,9 @@ class ParkingNode(DTROS):
         # Subscriber
         self.april_tag_sub = rospy.Subscriber("~april_tags", AprilTagDetectionArray, self.april_tag_callback,
                                               queue_size=1)
-        self.wheels_result = rospy.Subscriber("~wheels_result", BoolStamped, self.wheels_callback, queue_size=1)
-        self.optitrack_sub = rospy.Subscriber("~optitrack", Float32MultiArray, self.optitrack_callback, queue_size=1)
-        self.timer_sub = rospy.Subscriber("~timer", BoolStamped, self.timer_callback, queue_size=1)
+        # self.wheels_result = rospy.Subscriber("~wheels_result", BoolStamped, self.wheels_callback, queue_size=1)
+        # self.optitrack_sub = rospy.Subscriber("~optitrack", Float32MultiArray, self.optitrack_callback, queue_size=1)
+        # self.timer_sub = rospy.Subscriber("~timer", BoolStamped, self.timer_callback, queue_size=1)
         self.fsm_sub = rospy.Subscriber("~fsm_signal", Int32, self.fsm_callback, queue_size=1)
 
         self.left_wheel_encoder = rospy.Subscriber(f"/{vehicle_name}/left_wheel_encoder_node/tick", WheelEncoderStamped, self.left_encoder_call_back, queue_size=1)
@@ -156,21 +158,12 @@ class ParkingNode(DTROS):
 
 
         # Publisher
-        self.wheels_pub = rospy.Publisher("~wheels", String, queue_size=1)
+        # self.wheels_pub = rospy.Publisher("~wheels", String, queue_size=1)
         self.fsm_result = rospy.Publisher("~fsm_result", BoolStamped, queue_size=1)
-        # self.change_pattern = rospy.Publisher('~change_pattern', String)
+        self.change_pattern = rospy.Publisher('~change_pattern', String, queue_size=1)
 
-        # # Construct publishers
-        # self.pub_rectangle = rospy.Publisher(
-        #     "~debug/atag/compressed", CompressedImage, queue_size=1
-        # )
-        #
-        # # Construct subscribers
-        # self.duckie_image = rospy.Subscriber(
-        #     "~duckie_image", CompressedImage, self.processImageMessage, buff_size=10000000, queue_size=1
-        # )
 
-        self.bridge = CvBridge()
+        # self.bridge = CvBridge()
 
         # Variables
         self.left_encoder_last_value = 0
@@ -213,11 +206,15 @@ class ParkingNode(DTROS):
             rospy.sleep(self.sleep_after_move.value)
             self.state = States.WAITING_FOR_APRIL_TAG
 
-    # def send_LED_request(self, color="RED"):
-    #     """the LED color changing function"""
-    #     pattern = String()
-    #     pattern.data = color
-        # self.change_pattern.publish(pattern)
+    def send_LED_request(self, color="RED"):
+        """the LED color changing function"""
+        if self.LED_light == color:
+            pass
+        else:
+            pattern = String()
+            pattern.data = color
+            self.change_pattern.publish(pattern)
+            self.LED_light = color
 
     def fsm_callback(self, msg):
         self.log("Received FSM")
@@ -241,55 +238,6 @@ class ParkingNode(DTROS):
         self.state = States.WAITING_FOR_APRIL_TAG
         self.movement = MovementType.APRIL_TAG
 
-    def processImageMessage(self, image_msg):
-        if not self.state == States.WAITING_FOR_IMAGE_CALLBACK:
-            return
-        self.state = States.WAITING_FOR_APRIL_TAG
-        self.log("Received image callback")
-        if len(self.centers) == 0:
-            self.log("Exiting image callback without publishing")
-            return
-        # convert raw image file to cv2 image
-        if self.pub_rectangle.get_num_connections() < 0:
-            self.log("No connections, exiting")
-            return
-        try:
-            image = self.bridge.compressed_imgmsg_to_cv2(image_msg)
-        except ValueError as e:
-            self.logerr(f"Could not decode image: {e}")
-            return
-
-        half_side = self.april_tag_centering_threshold.value
-        top_left_x = int(self.centers[0][0] - half_side)
-        top_left_y = int(self.centers[0][1] - half_side)
-        bottom_right_x = int(self.centers[0][0] + half_side)
-        bottom_right_y = int(self.centers[0][1] + half_side)
-        image = cv2.rectangle(image, (top_left_x, top_left_y), (bottom_right_x, bottom_right_y), (0, 0, 0), -1)
-
-        top_left_x = int(self.april_tag_check_position_x.value - half_side)
-        top_left_y = int(self.april_tag_check_position_y.value - half_side)
-        bottom_right_x = int(self.april_tag_check_position_x.value + half_side)
-        bottom_right_y = int(self.april_tag_check_position_y.value + half_side)
-        image = cv2.rectangle(image, (top_left_x, top_left_y), (bottom_right_x, bottom_right_y), (255, 0, 0), -1)
-
-        # Publishing the masked image
-        # if self.pub_rectangle.get_num_connections() > 0:
-        target_areas_msg = self.bridge.cv2_to_compressed_imgmsg(image)
-        target_areas_msg.header = image_msg.header
-        self.pub_rectangle.publish(target_areas_msg)
-
-    def optitrack_callback(self, msg: Float32MultiArray):
-        if self.status:
-            self.log("Optitrack callback was called")
-            # if not self.state == States.WAITING_FOR_OPTITRACK:
-            return
-        self.log("Got optitrack data")
-        self.optitrack_ts = rospy.Time.from_sec(msg.data[-1] / SEC_TO_NSEC)
-        self.x_optitrack = msg.data[0]
-        self.y_optitrack = msg.data[1]
-        self.theta_optitrack = msg.data[2]
-        self.state = States.WAITING_FOR_TIMER_WITHOUT_IMAGE
-
     def april_tag_callback(self, msg: AprilTagDetectionArray):
         if not self.state == States.WAITING_FOR_APRIL_TAG:
             return
@@ -305,66 +253,47 @@ class ParkingNode(DTROS):
             self.centers.append(element.center)
             if element.tag_id == self.parking_patterns[self.current_pattern]["target_april_tag"]:
                 self.last_seen_a_tag_center = element.center
-        self.state = States.WAITING_FOR_TIMER
+        # self.state = States.WAITING_FOR_TIMER
 
-    def wheels_callback(self, msg):
-        self.log("Got callback from wheels")
-        # if not (self.state == States.WAITING_FOR_WHEELS):
-        #     self.log("Got unexpected message from wheels")
-        #     return
-        # if self.movement == MovementType.OFF:
-        #     self.log("Got unexpected message from wheels, while self.movement is OFF")
-        # self.wheels_ts = msg.header.stamp
-        # if self.movement == MovementType.OPTITRACK or self.movement == MovementType.OPTITRACK:
-        #     self.state = States.WAITING_FOR_OPTITRACK
-        # else:
-        #     self.state = States.WAITING_FOR_APRIL_TAG
-
-    def timer_callback(self, msg):
-        self.timer_ts = msg.header.stamp
-        if not self.status:
-            return
-        if not (self.state == States.WAITING_FOR_TIMER or self.state == States.WAITING_FOR_TIMER_WITHOUT_IMAGE):
-            return
-        if self.movement == MovementType.APRIL_TAG and not (self.state == States.WAITING_FOR_TIMER_WITHOUT_IMAGE):
-            self.movement_command = self.calculate_april_tag_next_move()
-            self.log(f"Moving in april_tag mode, movement command is {self.movement_command}")
-            # if self.parking_patterns[self.current_pattern]["target_april_tag"] not in self.tags_id:
-            #     self.log("April tag wasn't found")
-            # else:
-            #     self.log(
-            #         f"Current April tag params: \n "
-            #         f"april_tag_centering_threshold: {self.april_tag_centering_threshold.value} \n "
-            #         f"april_tag_check_position_x: {self.april_tag_check_position_x.value} \n "
-            #         f"april_tag_check_position_y: {self.april_tag_check_position_y.value} \n "
-            #         f"april_tag_area_of_covering_threshold: {self.april_tag_area_of_covering_threshold.value} \n "
-            #         f"april_tag_average_size_threshold: {self.april_tag_average_size_threshold.value} \n "
-            #         f"april_tag_bounding_box_size : {self.april_tag_bounding_box_size.value} \n")
-                # tag_index = 0
-                # for i, elem in enumerate(self.tags_id):
-                #     if elem == self.parking_patterns[self.current_pattern]["target_april_tag"]:
-                #         tag_index = i
-                #         break
-                # corners = self.tags_coords[tag_index]
-                # average_edge_length = 0
-                # for i in range(4):
-                #     average_edge_length += np.sqrt(
-                #         (corners[2 * i] - corners[(2 * i + 2) % 8]) ** 2 + (
-                #                     corners[2 * i + 1] - corners[(2 * i + 3) % 8]) ** 2)
-                # average_edge_length /= 4
-                # self.log(
-                #     f"Current april tag position is {corners}"
-                #     f"Its centers are {self.centers[tag_index]}"
-                #     f"Its edge length is {average_edge_length}"
-                # )
+        self.movement_command = self.calculate_april_tag_next_move()
+        self.log(f"Moving in april_tag mode, movement command is {self.movement_command}")
+        if self.parking_patterns[self.current_pattern]["target_april_tag"] not in self.tags_id:
+            self.log("April tag wasn't found")
+        else:
+            self.log(
+                f"Current April tag params: \n "
+                f"april_tag_centering_threshold: {self.april_tag_centering_threshold.value} \n "
+                f"april_tag_check_position_x: {self.april_tag_check_position_x.value} \n "
+                f"april_tag_check_position_y: {self.april_tag_check_position_y.value} \n "
+                f"april_tag_area_of_covering_threshold: {self.april_tag_area_of_covering_threshold.value} \n "
+                f"april_tag_average_size_threshold: {self.april_tag_average_size_threshold.value} \n "
+                f"april_tag_bounding_box_size : {self.april_tag_bounding_box_size.value} \n")
+            tag_index = 0
+            for i, elem in enumerate(self.tags_id):
+                if elem == self.parking_patterns[self.current_pattern]["target_april_tag"]:
+                    tag_index = i
+                    break
+            corners = self.tags_coords[tag_index]
+            average_edge_length = 0
+            for i in range(4):
+                average_edge_length += np.sqrt(
+                    (corners[2 * i] - corners[(2 * i + 2) % 8]) ** 2 + (
+                            corners[2 * i + 1] - corners[(2 * i + 3) % 8]) ** 2)
+            average_edge_length /= 4
+            self.log(
+                f"Current april tag position is {corners}"
+                f"Its centers are {self.centers[tag_index]}"
+                f"Its edge length is {average_edge_length}"
+            )
 
         if self.movement_command is None:
-            # self.log(f"No need to change move, current movement is {self.current_movement}")
+            self.log(f"No need to change move, current movement is {self.current_movement}")
             self.state = States.WAITING_FOR_APRIL_TAG
             return
         elif self.state == States.OFF:
-            # self.send_LED_request("PINK")
+            self.send_LED_request("PINK")
             self.log("Parking is finished")
+            rospy.sleep(3)
             self.make_move(MovementPattern.STOPPED)
             self.status = False
             self.state = States.OFF
@@ -392,11 +321,8 @@ class ParkingNode(DTROS):
             fsm_message.header.stamp = rospy.Time.now()
             self.fsm_result.publish(fsm_message)
         else:
-            # if self.movement == MovementType.APRIL_TAG and self.state == States.WAITING_FOR_TIMER:
-            #     self.state = States.WAITING_FOR_IMAGE_CALLBACK
-            #     # self.log("Changed to image callback")
-            # return
-            # self.log("Published for wheels")
+            self.send_LED_request("GREEN")
+            self.log("Published for wheels")
             self.current_movement = self.movement_command
             self.make_move(self.movement_command)
             # wheels_msg = String()
@@ -404,10 +330,90 @@ class ParkingNode(DTROS):
             self.state = States.WAITING_FOR_LEFT_ENCODER
             # self.wheels_pub.publish(wheels_msg)
 
+    # def timer_callback(self, msg):
+    #     self.timer_ts = msg.header.stamp
+    #     if not self.status:
+    #         return
+    #     if self.movement == MovementType.APRIL_TAG:
+    #         self.movement_command = self.calculate_april_tag_next_move()
+    #         self.log(f"Moving in april_tag mode, movement command is {self.movement_command}")
+    #         if self.parking_patterns[self.current_pattern]["target_april_tag"] not in self.tags_id:
+    #             self.log("April tag wasn't found")
+    #         else:
+    #             self.log(
+    #                 f"Current April tag params: \n "
+    #                 f"april_tag_centering_threshold: {self.april_tag_centering_threshold.value} \n "
+    #                 f"april_tag_check_position_x: {self.april_tag_check_position_x.value} \n "
+    #                 f"april_tag_check_position_y: {self.april_tag_check_position_y.value} \n "
+    #                 f"april_tag_area_of_covering_threshold: {self.april_tag_area_of_covering_threshold.value} \n "
+    #                 f"april_tag_average_size_threshold: {self.april_tag_average_size_threshold.value} \n "
+    #                 f"april_tag_bounding_box_size : {self.april_tag_bounding_box_size.value} \n")
+    #             tag_index = 0
+    #             for i, elem in enumerate(self.tags_id):
+    #                 if elem == self.parking_patterns[self.current_pattern]["target_april_tag"]:
+    #                     tag_index = i
+    #                     break
+    #             corners = self.tags_coords[tag_index]
+    #             average_edge_length = 0
+    #             for i in range(4):
+    #                 average_edge_length += np.sqrt(
+    #                     (corners[2 * i] - corners[(2 * i + 2) % 8]) ** 2 + (
+    #                                 corners[2 * i + 1] - corners[(2 * i + 3) % 8]) ** 2)
+    #             average_edge_length /= 4
+    #             self.log(
+    #                 f"Current april tag position is {corners}"
+    #                 f"Its centers are {self.centers[tag_index]}"
+    #                 f"Its edge length is {average_edge_length}"
+    #             )
+    #
+    #     if self.movement_command is None:
+    #         self.log(f"No need to change move, current movement is {self.current_movement}")
+    #         self.state = States.WAITING_FOR_APRIL_TAG
+    #         return
+    #     elif self.state == States.OFF:
+    #         self.send_LED_request("PINK")
+    #         self.log("Parking is finished")
+    #         rospy.sleep(3)
+    #         # self.send_LED_request("WHITE")
+    #         self.make_move(MovementPattern.STOPPED)
+    #         self.status = False
+    #         self.state = States.OFF
+    #         self.movement = MovementType.OFF
+    #         self.x_optitrack = 0
+    #         self.y_optitrack = 0
+    #         self.theta_optitrack = 0
+    #
+    #         self.tags_id = []
+    #         self.tags_coords = []
+    #         self.tags_family = []
+    #         self.centers = []
+    #
+    #         self.current_movement = MovementPattern.STOPPED
+    #         self.movement_command = MovementPattern.STOPPED
+    #
+    #         self.status = True
+    #         self.current_pattern = str(-1 * int(self.current_pattern))
+    #         self.state = States.WAITING_FOR_APRIL_TAG
+    #         self.movement = MovementType.APRIL_TAG
+    #
+    #         self.last_seen_a_tag_center = []
+    #         fsm_message = BoolStamped()
+    #         fsm_message.data = True
+    #         fsm_message.header.stamp = rospy.Time.now()
+    #         self.fsm_result.publish(fsm_message)
+    #     else:
+    #         self.log("Published for wheels")
+    #         self.current_movement = self.movement_command
+    #         self.make_move(self.movement_command)
+    #         # wheels_msg = String()
+    #         # wheels_msg.data = movement_command
+    #         self.state = States.WAITING_FOR_LEFT_ENCODER
+    #         # self.wheels_pub.publish(wheels_msg)
+
     def calculate_april_tag_next_move(self) -> Optional[MovementPattern]:
         if self.parking_patterns[self.current_pattern]["target_april_tag"] not in self.tags_id:
             if len(self.last_seen_a_tag_center) == 0:
-                # self.log("Exiting first if")
+                self.log("Exiting first if")
                 initial_rotation = MovementPattern.MOVING_LEFT \
                     if self.parking_patterns[self.current_pattern]["initial_rotation"] == "LEFT" \
                     else MovementPattern.MOVING_RIGHT
@@ -417,10 +423,10 @@ class ParkingNode(DTROS):
                 return initial_rotation
             else:
                 if self.last_seen_a_tag_center[0] > self.april_tag_check_position_x.value:
-                    # self.log("April tag went left, going right")
+                    self.log("April tag went left, going right")
                     result_rot = MovementPattern.MOVING_RIGHT
                 else:
-                    # self.log("April tag went right, going left")
+                    self.log("April tag went right, going left")
                     result_rot = MovementPattern.MOVING_LEFT
                 # if result_rot == self.current_movement:
                 #     return None
@@ -436,9 +442,9 @@ class ParkingNode(DTROS):
         if abs(centers[0] - self.april_tag_check_position_x.value) > self.april_tag_centering_threshold.value:
             movement = MovementPattern.MOVING_RIGHT_SLOW \
                 if centers[0] - self.april_tag_check_position_x.value > 0 else MovementPattern.MOVING_LEFT_SLOW
-            # self.log(f"center_x {centers[0]}")
-            # self.log(f"desired_position {self.april_tag_check_position_x.value}")
-            # self.log("Exiting second if")
+            self.log(f"center_x {centers[0]}")
+            self.log(f"desired_position {self.april_tag_check_position_x.value}")
+            self.log("Exiting second if")
             return movement
         elif (self.current_movement == MovementPattern.MOVING_LEFT or
               self.current_movement == MovementPattern.MOVING_RIGHT or
@@ -458,7 +464,7 @@ class ParkingNode(DTROS):
                 movement = MovementPattern.MOVING_FORWARD
             else:
                 movement = MovementPattern.MOVING_FORWARD_SLOW
-            # self.log("Exiting third if")
+            self.log("Exiting third if")
             # if movement == self.current_movement:
             #     return None
             # else:
@@ -467,17 +473,16 @@ class ParkingNode(DTROS):
         return MovementPattern.STOPPED
 
     def make_move(self, next_pattern):
+        # self.counter+=1
         # self.log(f"Make move is called with pattern {next_pattern}")
         start_moving = rospy.Time.now()
         # start = rospy.Time.now()
         if next_pattern == MovementPattern.MOVING_FORWARD:  # Move forward
-            # self.send_LED_request("GREEN")
+            # self.send_LED_request("BLUE")
 
             message = WheelsCmdStamped(vel_left=self.move_speed.value,
                                        vel_right=self.move_speed.value)
-            start_moving = rospy.Time.now()
             self.wheel_publisher.publish(message)
-            # start = rospy.Time.now()
             rospy.sleep(self.move_time.value)
 
         elif next_pattern == MovementPattern.MOVING_BACKWARD:  # Move Back
@@ -485,9 +490,7 @@ class ParkingNode(DTROS):
 
             message = WheelsCmdStamped(vel_left=-self.move_speed.value,
                                        vel_right=-self.move_speed.value)
-            start_moving = rospy.Time.now()
             self.wheel_publisher.publish(message)
-            # start = rospy.Time.now()
             rospy.sleep(self.move_time.value)
 
         elif next_pattern == MovementPattern.MOVING_RIGHT:  # Rotate Right
@@ -495,9 +498,7 @@ class ParkingNode(DTROS):
 
             message = WheelsCmdStamped(vel_left=self.rotation_speed.value,
                                        vel_right=-self.rotation_speed.value)
-            start_moving = rospy.Time.now()
             self.wheel_publisher.publish(message)
-            # start = rospy.Time.now()
             rospy.sleep(self.rotation_time.value)
 
         elif next_pattern == MovementPattern.MOVING_LEFT:  # Rotate Left
@@ -505,28 +506,22 @@ class ParkingNode(DTROS):
 
             message = WheelsCmdStamped(vel_left=-self.rotation_speed.value,
                                        vel_right=self.rotation_speed.value)
-            start_moving = rospy.Time.now()
             self.wheel_publisher.publish(message)
-            # start = rospy.Time.now()
             rospy.sleep(self.rotation_time.value)
         elif next_pattern == MovementPattern.MOVING_FORWARD_SLOW:  # Move forward
             # self.send_LED_request("GREEN")
 
             message = WheelsCmdStamped(vel_left=self.move_speed_slow.value,
                                        vel_right=self.move_speed_slow.value)
-            start_moving = rospy.Time.now()
             self.wheel_publisher.publish(message)
-            # start = rospy.Time.now()
-            rospy.sleep(self.move_time.value)
+            rospy.sleep(self.move_time_slow.value)
         elif next_pattern == MovementPattern.MOVING_LEFT_SLOW:  # Move forward
             # self.send_LED_request("GREEN")
 
             message = WheelsCmdStamped(vel_left=-self.rotation_speed_slow.value,
                                        vel_right=self.rotation_speed_slow.value)
-            start_moving = rospy.Time.now()
             self.wheel_publisher.publish(message)
-            # start = rospy.Time.now()
-            rospy.sleep(self.rotation_time.value)
+            rospy.sleep(self.rotation_time_slow.value)
         elif next_pattern == MovementPattern.MOVING_RIGHT_SLOW:  # Move forward
             # self.send_LED_request("GREEN")
 
@@ -535,10 +530,10 @@ class ParkingNode(DTROS):
             start_moving = rospy.Time.now()
             self.wheel_publisher.publish(message)
             # start = rospy.Time.now()
-            rospy.sleep(self.rotation_time.value)
+            rospy.sleep(self.rotation_time_slow.value)
         # self.log(f"Sleeping time is {rospy.Time.now() - start}")
         message = WheelsCmdStamped(vel_left=0, vel_right=0)
-        self.log(f"Moving time is {rospy.Time.now() - start_moving}")
+        # self.log(f"Moving time is {rospy.Time.now() - start_moving}")
         self.wheel_publisher.publish(message)
 
     def on_shutdown(self):
