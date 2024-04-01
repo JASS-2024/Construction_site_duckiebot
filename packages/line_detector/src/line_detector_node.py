@@ -164,12 +164,20 @@ class LineDetectorNode(DTROS):
         )
 
         # Subscribers
+        # self.sub_image = rospy.Subscriber(
+        #     "~image/compressed", CompressedImage, self.image_cb, buff_size=10000000, queue_size=1
+        # )
+        #
+        # self.sub_thresholds = rospy.Subscriber(
+        #     "~thresholds", AntiInstagramThresholds, self.thresholds_cb, queue_size=1
+        # )
+
         self.sub_image = rospy.Subscriber(
-            "~image/compressed", CompressedImage, self.image_cb, buff_size=10000000, queue_size=1
+            "~image/compressed", CompressedImage, None, buff_size=10000000, queue_size=1
         )
 
         self.sub_thresholds = rospy.Subscriber(
-            "~thresholds", AntiInstagramThresholds, self.thresholds_cb, queue_size=1
+            "~thresholds", AntiInstagramThresholds, None, queue_size=1
         )
 
     def thresholds_cb(self, thresh_msg):

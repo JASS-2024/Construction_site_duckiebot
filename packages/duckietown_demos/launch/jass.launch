@@ -37,17 +37,17 @@
 <!--         <arg name="veh" value="$(arg veh)"/> -->
 <!--     </include> -->
 
-    <include file="$(find movement)/launch/movement_node.launch">
-        <arg name="veh" value="$(arg veh)"/>
-    </include>
+<!--     <include file="$(find movement)/launch/movement_node.launch"> -->
+<!--         <arg name="veh" value="$(arg veh)"/> -->
+<!--     </include> -->
 
     <include file="$(find timer)/launch/timer_node.launch">
         <arg name="veh" value="$(arg veh)"/>
     </include>
 
-    <include file="$(find mqtt)/launch/mqtt_node.launch">
-        <arg name="veh" value="$(arg veh)"/>
-    </include>
+<!--     <include file="$(find mqtt)/launch/mqtt_node.launch"> -->
+<!--         <arg name="veh" value="$(arg veh)"/> -->
+<!--     </include> -->
   
     <include file="$(find parking)/launch/parking_node.launch">
         <arg name="veh" value="$(arg veh)"/>
