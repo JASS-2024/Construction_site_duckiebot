@@ -8,7 +8,7 @@ import apriltag
 # from concurrent.futures import ThreadPoolExecutor
 # from turbojpeg import TurboJPEG, TJPF_GRAY
 # from image_geometry import PinholeCameraModel
-# from std_msgs.msg import Bool
+from std_msgs.msg import Bool
 # from std_msgs.msg import Int32MultiArray
 # from dt_class_utils import DTReminder
 from duckietown.dtros import DTROS, NodeType, TopicType, DTParam, ParamType
@@ -31,7 +31,7 @@ class AprilTagDetector(DTROS):
         self.queue = False
         self.log('apriltag_init')
         self._type_dict = rospy.get_param("~type_dict")
-
+        self.is_active = False
 
         # Publisher
 
@@ -42,8 +42,14 @@ class AprilTagDetector(DTROS):
 
         #Subscriber
         self._img_sub = rospy.Subscriber( "~image", CompressedImage, self.process_image, queue_size=1, buff_size="20MB")
+        self._start_detections = rospy.Subscriber( "~start_detections", Bool, self.start_detections, queue_size=1)
+        self._stop_detections = rospy.Subscriber( "~stop_detections", Bool, self.stop_detections, queue_size=1)
 
+    def start_detections(self, msg):
+        self.is_active = True
 
+    def stop_detections(self, msg):
+        self.is_active = False
 
     def send_LED_request(self, color = "RED"):
         pattern = String()
@@ -67,6 +73,8 @@ class AprilTagDetector(DTROS):
         return self.detector.detect(gray)
 
     def process_image(self, image_msg):
+        if not self.is_active:
+            return
         img = self.bridge.compressed_imgmsg_to_cv2(image_msg)
         tag_list = self._findAprilTags(img)
         detections_list = []

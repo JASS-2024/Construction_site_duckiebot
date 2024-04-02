@@ -1,6 +1,9 @@
 #img_size: [120,160]
 #top_cutoff: 40
 
+#img_size: [120,160]
+#top_cutoff: 60
+
 img_size: [240,320]
 top_cutoff: 120
 
