@@ -20,8 +20,8 @@ from image_processing.anti_instagram import AntiInstagram
 from duckietown.dtros import DTROS, NodeType, TopicType, DTParam, ParamType
 
 AMOUNT_OF_ITERATIONS = 10
-HEIGHT = 240
-WIDTH = 320
+HEIGHT = 120
+WIDTH = 160
 # HEIGHT = 120
 # WIDTH = 160
 USE_DL = True
