@@ -171,11 +171,14 @@ class FSMNode:
             self.publish()
         else:
             rospy.logwarn(f"[{self.node_name}] {req.state} is not a valid state.")
+            print(f"[{self.node_name}] {req.state} is not a valid state.")
+
         return SetFSMStateResponse()
 
     def publishState(self):
         self.pub_state.publish(self.state_msg)
         rospy.loginfo(f"[{self.node_name}] FSMState: {self.state_msg.state}")
+        print(f"[{self.node_name}] FSMState: {self.state_msg.state}")
 
     def publishBools(self):
         active_nodes = self._getActiveNodesOfState(self.state_msg.state)
