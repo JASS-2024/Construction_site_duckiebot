@@ -127,6 +127,8 @@ class LineDetectorNode(DTROS):
 
         self.bridge = CvBridge()
 
+        self.is_active = True
+
         # The thresholds to be used for AntiInstagram color correction
         self.ai_thresholds_received = False
         self.anti_instagram_thresholds = dict()
@@ -176,6 +178,8 @@ class LineDetectorNode(DTROS):
             "~thresholds", AntiInstagramThresholds, self.thresholds_cb, queue_size=1
         )
 
+        self.switcher_sub = rospy.Subscriber("~switcher", Bool, self.switcher_cb, queue_size=1)
+
         self.log("Node constructor is finished")
 
         # self.sub_image = rospy.Subscriber(
@@ -186,12 +190,19 @@ class LineDetectorNode(DTROS):
         #     "~thresholds", AntiInstagramThresholds, None, queue_size=1
         # )
 
+    def switcher_cb(self, msg):
+        self.is_active = msg.data
+
     def thresholds_cb(self, thresh_msg):
+        if not self.is_active:
+            return
         self.anti_instagram_thresholds["lower"] = thresh_msg.low
         self.anti_instagram_thresholds["higher"] = thresh_msg.high
         self.ai_thresholds_received = True
 
     def image_cb(self, image_msg):
+        if not self.is_active:
+            return
         """
         Processes the incoming image messages.
 

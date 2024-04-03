@@ -17,7 +17,7 @@ from sensor_msgs.msg import CompressedImage
 # from geometry_msgs.msg import Transform, Vector3, Quaternion
 from duckietown_msgs.msg import BoolStamped, AprilTagDetection, AprilTagDetectionArray, FSMState
 from duckietown_msgs.srv import ChangePattern, SetFSMState
-from std_msgs.msg import String, Int32
+from std_msgs.msg import String, Int32, Bool
 
 
 class AprilTagDetector(DTROS):
@@ -54,6 +54,7 @@ class AprilTagDetector(DTROS):
         self.change_pattern = rospy.Publisher('~change_pattern', String, queue_size=1)
         self.set_state = rospy.ServiceProxy("~set_state", SetFSMState)
         self.set_parking = rospy.Publisher("~fsm_signal", Int32, queue_size=1)
+        self.switcher_pub = rospy.Publisher("~switcher", Bool, queue_size=1)
         # self.changePattern = rospy.ServiceProxy("~set_pattern", ChangePattern)
 
         # Subscriber
@@ -67,11 +68,17 @@ class AprilTagDetector(DTROS):
             msg = String()
             msg.data = "NORMAL_JOYSTICK_CONTROL"
             self.set_state("NORMAL_JOYSTICK_CONTROL")
+            switcher_msg = Bool()
+            switcher_msg.data = False
+            self.switcher_pub.publish(switcher_msg)
 
     def set_autonomous(self):
         if self.get_state != "LANE_FOLLOWING":
             msg = String()
             msg.data = "LANE_FOLLOWING"
+            switcher_msg = Bool()
+            switcher_msg.data = True
+            self.switcher_pub.publish(switcher_msg)
             self.set_state("LANE_FOLLOWING")
 
     def parking_finished_reset(self, msg):
