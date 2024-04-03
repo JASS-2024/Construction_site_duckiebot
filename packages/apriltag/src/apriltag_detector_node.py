@@ -65,8 +65,6 @@ class AprilTagDetector(DTROS):
 
     def set_manual(self):
         if self.get_state != "NORMAL_JOYSTICK_CONTROL":
-            msg = String()
-            msg.data = "NORMAL_JOYSTICK_CONTROL"
             self.set_state("NORMAL_JOYSTICK_CONTROL")
             switcher_msg = Bool()
             switcher_msg.data = False
@@ -74,8 +72,6 @@ class AprilTagDetector(DTROS):
 
     def set_autonomous(self):
         if self.get_state != "LANE_FOLLOWING":
-            msg = String()
-            msg.data = "LANE_FOLLOWING"
             switcher_msg = Bool()
             switcher_msg.data = True
             self.switcher_pub.publish(switcher_msg)
@@ -94,6 +90,7 @@ class AprilTagDetector(DTROS):
                                             (self.params["cent_x_d"].value, self.params["cent_y_d"].value),
                                             self.params["size_d"].value) == [1, 0, 0]:
             self.set_manual()
+            self.send_LED_request("GREEN")
             self.set_parking.publish(1)
             # print(f"Start parking request sent, parking_state {self.parking_state}, parking_finished {self.parking_finished}")
             self.parking_state = True
@@ -138,7 +135,7 @@ class AprilTagDetector(DTROS):
         size_of_AT = (abs(corner_0_x - corner_2_x) + abs(corner_0_y - corner_2_y) + abs(corner_1_y - corner_3_y) + abs(
             corner_1_x - corner_3_x)) / 4
         if abs(size - size_of_AT) > size_delta:
-            answer[2] += np.sign(size - size_of_AT)
+            answer[2] += np.sign(size_of_AT - size)
         print(f"Tag is: {answer}")
         return answer
 
