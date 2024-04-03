@@ -17,6 +17,10 @@
             <rosparam command="load" file="$(find apriltag)/config/$(arg param_file_name).yaml"/>
             <remap from="apriltag_detector_node/image" to="camera_node/image/compressed" />
             <remap from="apriltag_detector_node/change_pattern" to="led_emitter_node/change_pattern"/>
+            <remap from="apriltag_detector_node/mode" to="fsm_node/mode"/>
+            <remap from="apriltag_detector_node/set_state" to="fsm_node/set_state"/>
+            <remap from="apriltag_detector_node/fsm_signal" to="parking_node/fsm_signal"/>
+            <remap from="apriltag_detector_node/parking_finished" to="parking_node/parking_finished"/>
         </node>
 </group>
 </launch>
