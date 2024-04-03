@@ -74,7 +74,7 @@ class LaneControllerNode(DTROS):
         self.params["~theta_thres_min"] = DTParam("~theta_thres_min", param_type=ParamType.FLOAT, min_value=-100.0, max_value=100.0)  #SUGGESTION mandatorizing the use of DTParam inplace of rospy.get_param for parameters in the entire dt-core repository as it allows active tuning while Robot is in action.
         self.params["~theta_thres_max"] = DTParam("~theta_thres_max", param_type=ParamType.FLOAT, min_value=-100.0, max_value=100.0) 
         self.params["~d_thres"] = rospy.get_param("~d_thres", None)
-        self.params["~d_offset"] = DTParam("~d_offset", param_type=ParamType.FLOAT, min_value=-100.0, max_value=100.0)
+        self.params["~d_offset"] = rospy.get_param("~d_offset", None)
         self.params["~integral_bounds"] = rospy.get_param("~integral_bounds", None)
         self.params["~d_resolution"] = rospy.get_param("~d_resolution", None)
         self.params["~phi_resolution"] = rospy.get_param("~phi_resolution", None)
@@ -226,7 +226,7 @@ class LaneControllerNode(DTROS):
         else:
 
             # Compute errors
-            d_err = pose_msg.d - self.params["~d_offset"].value
+            d_err = pose_msg.d - self.params["~d_offset"]
             phi_err = pose_msg.phi
 
             # We cap the error if it grows too large

@@ -147,21 +147,15 @@ class ParkingNode(DTROS):
         )
 
         # Subscriber
-        # self.april_tag_sub = rospy.Subscriber("~april_tags", AprilTagDetectionArray, self.april_tag_callback,
-        #                                       queue_size=1)
-        #
-        self.april_tag_sub = rospy.Subscriber("~april_tags", AprilTagDetectionArray, None,
+        self.april_tag_sub = rospy.Subscriber("~april_tags", AprilTagDetectionArray, self.april_tag_callback,
                                               queue_size=1)
+        # self.wheels_result = rospy.Subscriber("~wheels_result", BoolStamped, self.wheels_callback, queue_size=1)
+        # self.optitrack_sub = rospy.Subscriber("~optitrack", Float32MultiArray, self.optitrack_callback, queue_size=1)
+        # self.timer_sub = rospy.Subscriber("~timer", BoolStamped, self.timer_callback, queue_size=1)
+        self.fsm_sub = rospy.Subscriber("~fsm_signal", Int32, self.fsm_callback, queue_size=1)
 
-        self.fsm_sub = rospy.Subscriber("~fsm_signal", Int32, None, queue_size=1)
-
-        self.left_wheel_encoder = rospy.Subscriber(f"/{vehicle_name}/left_wheel_encoder_node/tick", WheelEncoderStamped, None, queue_size=1)
-        self.right_wheel_encoder = rospy.Subscriber(f"/{vehicle_name}/right_wheel_encoder_node/tick", WheelEncoderStamped, None, queue_size=1)
-        #
-        # self.fsm_sub = rospy.Subscriber("~fsm_signal", Int32, self.fsm_callback, queue_size=1)
-        #
-        # self.left_wheel_encoder = rospy.Subscriber(f"/{vehicle_name}/left_wheel_encoder_node/tick", WheelEncoderStamped, self.left_encoder_call_back, queue_size=1)
-        # self.right_wheel_encoder = rospy.Subscriber(f"/{vehicle_name}/right_wheel_encoder_node/tick", WheelEncoderStamped, self.right_encoder_call_back, queue_size=1)
+        self.left_wheel_encoder = rospy.Subscriber(f"/{vehicle_name}/left_wheel_encoder_node/tick", WheelEncoderStamped, self.left_encoder_call_back, queue_size=1)
+        self.right_wheel_encoder = rospy.Subscriber(f"/{vehicle_name}/right_wheel_encoder_node/tick", WheelEncoderStamped, self.right_encoder_call_back, queue_size=1)
 
 
 

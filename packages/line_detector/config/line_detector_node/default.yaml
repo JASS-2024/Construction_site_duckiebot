@@ -1,11 +1,8 @@
-img_size: [120,160]
-top_cutoff: 40
-
 #img_size: [120,160]
-#top_cutoff: 60
+#top_cutoff: 40
 
-#img_size: [240,320]
-#top_cutoff: 120
+img_size: [240,320]
+top_cutoff: 120
 
 colors:
   RED:
@@ -28,4 +25,4 @@ line_detector_parameters:
   hough_min_line_length: 3
   hough_max_line_gap: 1
 
-debug: True
+debug: False
