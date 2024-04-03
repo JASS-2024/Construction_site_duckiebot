@@ -8,7 +8,7 @@ import apriltag
 # from concurrent.futures import ThreadPoolExecutor
 # from turbojpeg import TurboJPEG, TJPF_GRAY
 # from image_geometry import PinholeCameraModel
-# from std_msgs.msg import Bool
+from std_msgs.msg import Bool
 # from std_msgs.msg import Int32MultiArray
 # from dt_class_utils import DTReminder
 from duckietown.dtros import DTROS, NodeType, TopicType, DTParam, ParamType
@@ -47,7 +47,6 @@ class AprilTagDetector(DTROS):
         # faking the parking-triger apriltag number
         self.params["parking_trigger_apriltag"] = DTParam("~parking_trigger_apriltag", param_type=ParamType.INT,
                                                           min_value=0, max_value=1000)
-
         # Publisher
 
         self.tags_message = rospy.Publisher('~tags_array', AprilTagDetectionArray, queue_size=1)
@@ -149,6 +148,8 @@ class AprilTagDetector(DTROS):
         return self.detector.detect(gray)
 
     def process_image(self, image_msg):
+        if not self.is_active:
+            return
         img = self.bridge.compressed_imgmsg_to_cv2(image_msg)
         tag_list = self._findAprilTags(img)
         detections_list = []
