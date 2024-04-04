@@ -1,0 +1,14 @@
+mqtt_broker_host: '192.168.3.85'
+mqtt_broker_port: 1883
+mqtt_broker_timeout: 60
+
+
+# Vehicle names adjustions because of OptiTrack internal naming
+spgc0duckie: 'spgc'
+duckiebot04: 'db04'
+duckiebot05: 'db05'
+duckiebot07: 'db07'
+dubkiebot13: 'duckie09Something more here prollSomething more here prollyy'
+
+# Something more here prollSomething more here prolly 
+
