@@ -4,7 +4,7 @@ parking_patterns:
     y_opt: 8.5413
 
     target_april_tag: 30
-    april_tag_center_delta: 80
+    april_tag_center_delta: 90
     april_tag_center_x: 334
     april_tag_center_y: 138
     april_tag_side_delta: 20
@@ -15,12 +15,12 @@ parking_patterns:
     x_opt: 0.0
     y_opt: 0.0
     target_april_tag: 239
-    april_tag_center_delta: 80
+    april_tag_center_delta: 110
     april_tag_center_x: 320
     april_tag_center_y: 140
-    april_tag_side_delta: 3
+    april_tag_side_delta: 5
     april_tag_side: 45
-    speed_changing_threshold: 25
+    speed_changing_threshold: 30
     initial_rotation: "RIGHT"
 
 
@@ -32,7 +32,7 @@ optitrack_positional_threshold: 0.001
 move_speed:  1
 rotation_speed:  0.5
 move_speed_slow: 0.5
-rotation_speed_slow: 0.3
+rotation_speed_slow: 0.4
 move_time:  0.05
 rotation_time: 0.05
 move_time_slow:  0.05

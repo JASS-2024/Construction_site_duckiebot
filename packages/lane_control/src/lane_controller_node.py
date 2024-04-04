@@ -12,11 +12,12 @@ from duckietown_msgs.msg import (
     StopLineReading,
 )
 
+from std_msgs.msg import Int32, Float32
 from lane_controller.controller import LaneController
 
 class V_Bar_replacement:
-    def __init__(self):
-        self.value = 0
+    def __init__(self, val=0):
+        self.value = val
 
 class LaneControllerNode(DTROS):
     """Computes control action.
@@ -131,8 +132,13 @@ class LaneControllerNode(DTROS):
         self.sub_obstacle_stop = rospy.Subscriber(
             "~stop_request", BoolStamped, self.stopOnObstacle, queue_size=1
         )
+        self.changeVBarSub = rospy.Subscriber(
+            "~change_vbar", Float32, self.changeVBar, queue_size=1
+        )
         self.log("Initialized!")
 
+    def changeVBar(self, msg):
+        self.params["~v_bar"] = V_Bar_replacement(msg.data)
 
     def stopOnObstacle(self, msg):
         if msg.data:

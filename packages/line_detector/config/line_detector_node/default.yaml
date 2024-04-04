@@ -28,4 +28,4 @@ line_detector_parameters:
   hough_min_line_length: 3
   hough_max_line_gap: 1
 
-debug: True
+debug: False
