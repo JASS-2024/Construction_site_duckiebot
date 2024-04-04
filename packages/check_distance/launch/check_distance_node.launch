@@ -1,12 +1,12 @@
 <launch>
 	<arg name="veh"/>
 	<arg name="param_file_name" default="default" doc="Specify a param file. ex:megaman"/>
-	<arg name="pkg_name" default="movement" doc="name of the package"/>
-	<arg name="node_name" default="movement_node" doc="name of the node"/>
+	<arg name="pkg_name" default="check_distance" doc="name of the package"/>
+	<arg name="node_name" default="check_distance_node" doc="name of the node"/>
 
         <group ns="$(arg veh)">
 	    <node  pkg="$(arg pkg_name)" type="$(arg node_name).py" name="$(arg node_name)" output="screen">
-	        <rosparam command="load" file="$(find movement)/config/$(arg node_name)/$(arg param_file_name).yaml"/>
+	        <rosparam command="load" file="$(find check_distance)/config/$(arg node_name)/$(arg param_file_name).yaml"/>
 	    </node>
 	</group>
 </launch>

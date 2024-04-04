@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>emergency_stop</name>
+  <name>check_distance</name>
   <version>1.0.0</version>
-  <description>The package containing emergency_stop node</description>
+  <description>The package containing check distance node</description>
 
   <author email="lelikk2002@gmail.com">Ilia Nechaev</author>
   <maintainer email='2003asf@gmail.com'>Alexandra Fedorova</maintainer>
