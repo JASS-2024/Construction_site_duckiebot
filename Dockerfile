@@ -11,7 +11,7 @@ ARG ARCH=arm64v8
 ARG DISTRO=daffy
 ARG BASE_TAG=${DISTRO}-${ARCH}
 #ARG BASE_IMAGE=dt-core
-ARG BASE_IMAGE=duckietown/duckiebot_diploma_impl
+ARG BASE_IMAGE=duckietown/duckietown_diploma_impl
 
 ARG LAUNCHER=default
 ARG CUDA_VERSION=10.2
@@ -23,7 +23,7 @@ ARG TORCH_VISION_VERSION=0.8.1
 #FROM ${DOCKER_REGISTRY}/duckietown/${BASE_IMAGE}:${BASE_TAG}
 
 ARG DOCKER_REGISTRY=docker.io
-FROM  ${BASE_IMAGE}:diploma-arm64v8
+FROM  ${BASE_IMAGE}:latest-arm64v8
 
 # recall all arguments
 ARG ARCH
@@ -96,9 +96,9 @@ ENV PYCUDA_VERSION 2021.1
 # install python3 dependencies
 RUN pip uninstall dt-apriltag
 COPY ./dependencies-py3.txt "${REPO_PATH}/"
-RUN dt-pip3-install ${REPO_PATH}/dependencies-py3.txt
+RUN pip3 install -r ${REPO_PATH}/dependencies-py3.txt
 COPY ./dev-requirements.txt "${REPO_PATH}/"
-RUN dt-pip3-install ${REPO_PATH}/dev-requirements.txt
+RUN  pip3 install -r ${REPO_PATH}/dev-requirements.txt
 
 
 ##! install Zuper dependencies
