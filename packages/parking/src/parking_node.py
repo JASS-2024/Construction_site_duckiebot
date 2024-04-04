@@ -100,11 +100,11 @@ class ParkingNode(DTROS):
         self.parking_patterns: dict = rospy.get_param('~parking_patterns')
         self.optitrack_positional_threshold = DTParam('~optitrack_positional_threshold', param_type=ParamType.FLOAT,
                                                       min_value=0, max_value=1)
-        self.optitrack_angle_threshold = DTParam('~optitrack_angle_threshold', param_type=ParamType.FLOAT, min_value=0,
-                                                 max_value=1)
+        # self.optitrack_angle_threshold = DTParam('~optitrack_angle_threshold', param_type=ParamType.FLOAT, min_value=0,
+        #                                          max_value=1)
 
-        self.speed_changing_threshold = DTParam('~speed_changing_threshold', param_type=ParamType.FLOAT,
-                                                min_value=0, max_value=1000)
+        # self.speed_changing_threshold = DTParam('~speed_changing_threshold', param_type=ParamType.FLOAT,
+        #                                         min_value=0, max_value=1000)
 
         self.move_speed = DTParam("~move_speed", param_type=ParamType.FLOAT, min_value=0, max_value=1)
         self.rotation_speed = DTParam("~rotation_speed", param_type=ParamType.FLOAT, min_value=0, max_value=1)
@@ -293,35 +293,35 @@ class ParkingNode(DTROS):
 
         self.movement_command = self.calculate_april_tag_next_move()
         # self.log(f"Moving in april_tag mode, movement command is {self.movement_command}")
-        if self.parking_patterns[self.current_pattern]["target_april_tag"] not in self.tags_id:
-            # self.log("April tag wasn't found")
-            pass
-        else:
-            # self.log(
-            #     f"Current April tag params: \n "
-            #     f"april_tag_centering_threshold: {self.april_tag_centering_threshold.value} \n "
-            #     f"april_tag_check_position_x: {self.april_tag_check_position_x.value} \n "
-            #     f"april_tag_check_position_y: {self.april_tag_check_position_y.value} \n "
-            #     f"april_tag_area_of_covering_threshold: {self.april_tag_area_of_covering_threshold.value} \n "
-            #     f"april_tag_average_size_threshold: {self.april_tag_average_size_threshold.value} \n "
-            #     f"april_tag_bounding_box_size : {self.april_tag_bounding_box_size.value} \n")
-            tag_index = 0
-            for i, elem in enumerate(self.tags_id):
-                if elem == self.parking_patterns[self.current_pattern]["target_april_tag"]:
-                    tag_index = i
-                    break
-            corners = self.tags_coords[tag_index]
-            average_edge_length = 0
-            for i in range(4):
-                average_edge_length += np.sqrt(
-                    (corners[2 * i] - corners[(2 * i + 2) % 8]) ** 2 + (
-                            corners[2 * i + 1] - corners[(2 * i + 3) % 8]) ** 2)
-            average_edge_length /= 4
-            # self.log(
-            #     f"Current april tag position is {corners}"
-            #     f"Its centers are {self.centers[tag_index]}"
-            #     f"Its edge length is {average_edge_length}"
-            # )
+        # if self.parking_patterns[self.current_pattern]["target_april_tag"] not in self.tags_id:
+        #     # self.log("April tag wasn't found")
+        #     pass
+        # else:
+        #     # self.log(
+        #     #     f"Current April tag params: \n "
+        #     #     f"april_tag_centering_threshold: {self.april_tag_centering_threshold.value} \n "
+        #     #     f"april_tag_check_position_x: {self.april_tag_check_position_x.value} \n "
+        #     #     f"april_tag_check_position_y: {self.april_tag_check_position_y.value} \n "
+        #     #     f"april_tag_area_of_covering_threshold: {self.april_tag_area_of_covering_threshold.value} \n "
+        #     #     f"april_tag_average_size_threshold: {self.april_tag_average_size_threshold.value} \n "
+        #     #     f"april_tag_bounding_box_size : {self.april_tag_bounding_box_size.value} \n")
+        #     tag_index = 0
+        #     for i, elem in enumerate(self.tags_id):
+        #         if elem == self.parking_patterns[self.current_pattern]["target_april_tag"]:
+        #             tag_index = i
+        #             break
+        #     corners = self.tags_coords[tag_index]
+        #     average_edge_length = 0
+        #     for i in range(4):
+        #         average_edge_length += np.sqrt(
+        #             (corners[2 * i] - corners[(2 * i + 2) % 8]) ** 2 + (
+        #                     corners[2 * i + 1] - corners[(2 * i + 3) % 8]) ** 2)
+        #     average_edge_length /= 4
+        #     # self.log(
+        #     #     f"Current april tag position is {corners}"
+        #     #     f"Its centers are {self.centers[tag_index]}"
+        #     #     f"Its edge length is {average_edge_length}"
+        #     # )
 
         if self.movement_command is None:
             # self.log(f"No need to change move, current movement is {self.current_movement}")
@@ -413,7 +413,7 @@ class ParkingNode(DTROS):
             (current_pattern["april_tag_center_x"], current_pattern["april_tag_center_y"]),
             current_pattern["april_tag_side"],
             (current_pattern["april_tag_center_delta"], current_pattern["april_tag_center_delta"]),
-            current_pattern["april_tag_side_delta"])
+            current_pattern["april_tag_side_delta"], current_pattern["speed_changing_threshold"])
         if relative_position[0] != 0:
             movement = MovementPattern.MOVING_RIGHT_SLOW if relative_position[0] > 0 else MovementPattern.MOVING_LEFT_SLOW
             # self.log(f"desired_position {current_pattern["april_tag_center_x"]}")

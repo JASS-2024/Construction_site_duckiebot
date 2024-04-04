@@ -6,11 +6,11 @@ type_dict:
   #type of "center of the parking lot apriltag"
   "30": 2
 
-cent_x: 500
+cent_x: 480
 cent_y: 150
-cent_x_d: 20
-cent_y_d: 3
-size: 67
-size_d: 13
+cent_x_d: 70
+cent_y_d: 100
+size: 65
+size_d: 15
 resize: 6
 parking_trigger_apriltag: 533

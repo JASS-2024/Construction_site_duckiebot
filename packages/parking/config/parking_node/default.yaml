@@ -15,7 +15,7 @@ parking_patterns:
     x_opt: 0.0
     y_opt: 0.0
     target_april_tag: 239
-    april_tag_center_delta: 40
+    april_tag_center_delta: 80
     april_tag_center_x: 320
     april_tag_center_y: 140
     april_tag_side_delta: 3

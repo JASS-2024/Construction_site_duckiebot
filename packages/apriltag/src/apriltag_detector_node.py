@@ -88,7 +88,7 @@ class AprilTagDetector(DTROS):
                                             (self.params["cent_x"].value, self.params["cent_y"].value),
                                             self.params["size"].value,
                                             (self.params["cent_x_d"].value, self.params["cent_y_d"].value),
-                                            self.params["size_d"].value) == [1, 0, 0]:
+                                            self.params["size_d"].value)[2] == 0:
             self.set_manual()
             self.send_LED_request("GREEN")
             self.set_parking.publish(1)
@@ -99,7 +99,7 @@ class AprilTagDetector(DTROS):
                                             (self.params["cent_x"].value, self.params["cent_y"].value),
                                             self.params["size"].value,
                                             (self.params["cent_x_d"].value, self.params["cent_y_d"].value),
-                                            self.params["size_d"].value) == [1, 0, 0]:
+                                            self.params["size_d"].value)[2] == 0:
             self.parking_state = False
             self.set_parking.publish(0)
             # print(f"Stop parking request sent, parking_state {self.parking_state}, parking_finished {self.parking_finished}")
@@ -134,7 +134,7 @@ class AprilTagDetector(DTROS):
             answer[1] += np.sign(center_y - center[1])
         size_of_AT = (abs(corner_0_x - corner_2_x) + abs(corner_0_y - corner_2_y) + abs(corner_1_y - corner_3_y) + abs(
             corner_1_x - corner_3_x)) / 4
-        if abs(size - size_of_AT) > size_delta:
+        if abs(size - size_of_AT) > size_delta and size_of_AT < size:
             answer[2] += np.sign(size_of_AT - size)
         print(f"Tag is: {answer}")
         return answer
