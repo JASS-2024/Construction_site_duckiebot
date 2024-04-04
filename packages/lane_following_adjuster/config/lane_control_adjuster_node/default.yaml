@@ -1,0 +1,4 @@
+# Your object's name
+threshold: 5
+check_interval: 1
+full_throtle_time: 0.05

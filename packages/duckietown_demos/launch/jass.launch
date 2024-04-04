@@ -32,6 +32,10 @@
     <include file="$(find apriltag)/launch/apriltag_detector_node.launch">
         <arg name="veh" value="$(arg veh)"/>
     </include>
+
+    <include file="$(find lane_control_adjuster)/launch/lane_control_adjuster_node.launch">
+        <arg name="veh" value="$(arg veh)"/>
+    </include>
   
 <!--     <include file="$(find obstacle_detection)/launch/obstacle_detection_node.launch"> -->
 <!--         <arg name="veh" value="$(arg veh)"/> -->
