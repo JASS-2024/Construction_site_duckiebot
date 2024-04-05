@@ -70,13 +70,15 @@ class MQTTMultiNode(DTROS):
             try:
                 print("Yes, it was garage/knockknock")
                 message = json.loads(msg.payload.decode("utf-8"))
-                print("Message.get('license_plate') " + message.get('license_plate'))
                 print("self.license_plate " + self.license_plate.value)
                 if message.get('license_plate') == self.license_plate.value:
-                    self.place_id = message.get('place_id')
-                    # Publishing received place_id to the ROS topic
-                    self.booked_slot_pub.publish(self.place_id)
-                    print(f"Published! For this bot place_id is {self.place_id}")
+                    if message.get('place_id') != "-":
+                        self.place_id = message.get('place_id')
+                        # Publishing received place_id to the ROS topic
+                        self.booked_slot_pub.publish(self.place_id)
+                        print(f"Published! For this bot place_id is {self.place_id}")
+                    else:
+                        print("No place_id provided, only \"-\"")
             except json.JSONDecodeError as e:
                 rospy.logerr(f"Error decoding JSON: {e}")
 
