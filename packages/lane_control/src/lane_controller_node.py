@@ -12,12 +12,24 @@ from duckietown_msgs.msg import (
     StopLineReading,
 )
 
-from std_msgs.msg import Int32, Float32
+from std_msgs.msg import Int32, Float32, Bool
 from lane_controller.controller import LaneController
 
 class V_Bar_replacement:
-    def __init__(self, val=0):
-        self.value = val
+    def __init__(self, val, replacement):
+        self.val = val
+        self.replacement = replacement
+        self.switcher = False
+
+    def use_replacement(self, switcher):
+        self.switcher = switcher
+
+    @property
+    def value(self):
+        if self.switcher:
+            return self.replacement.value
+        else:
+            return self.val.value
 
 class LaneControllerNode(DTROS):
     """Computes control action.
@@ -60,7 +72,10 @@ class LaneControllerNode(DTROS):
         # Add the node parameters to the parameters dictionary
         # TODO: MAKE TO WORK WITH NEW DTROS PARAMETERS
         self.params = dict()
-        self.params["~v_bar"] = DTParam("~v_bar", param_type=ParamType.FLOAT, min_value=0.0, max_value=5.0)
+        self.params["~v_bar"] = V_Bar_replacement(
+            DTParam("~v_bar", param_type=ParamType.FLOAT, min_value=0.0, max_value=5.0),
+            DTParam("~v_bar_slow", param_type=ParamType.FLOAT, min_value=0.0, max_value=5.0),
+        )
         self.initial_v_bar = self.params["~v_bar"].value
         self.params["~k_d"] = DTParam("~k_d", param_type=ParamType.FLOAT, min_value=-100.0, max_value=100.0)
         self.params["~k_theta"] = DTParam(
@@ -133,18 +148,21 @@ class LaneControllerNode(DTROS):
             "~stop_request", BoolStamped, self.stopOnObstacle, queue_size=1
         )
         self.changeVBarSub = rospy.Subscriber(
-            "~change_vbar", Float32, self.changeVBar, queue_size=1
+            "~change_vbar", Bool, self.changeVBar, queue_size=1
         )
         self.log("Initialized!")
 
     def changeVBar(self, msg):
-        self.params["~v_bar"] = V_Bar_replacement(msg.data)
+        v_bar_value = self.params["~v_bar"].value
+        self.log(f"Current vbar is {v_bar_value}")
+        self.params["~v_bar"].use_replacement(msg.data)
 
     def stopOnObstacle(self, msg):
-        if msg.data:
-            self.params["~v_bar"] = V_Bar_replacement()
-        else:
-            self.params["~v_bar"] = DTParam("~v_bar", param_type=ParamType.FLOAT, min_value=0.0, max_value=5.0)
+        self.log("Stopping obstacle called")
+        # if msg.data:
+        #     self.params["~v_bar"] = V_Bar_replacement()
+        # else:
+        #     self.params["~v_bar"] = DTParam("~v_bar", param_type=ParamType.FLOAT, min_value=0.0, max_value=5.0)
 
 
     def cbObstacleStopLineReading(self, msg):

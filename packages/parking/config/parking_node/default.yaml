@@ -31,7 +31,7 @@ optitrack_positional_threshold: 0.001
 
 move_speed:  1
 rotation_speed:  0.5
-move_speed_slow: 0.5
+move_speed_slow: 0.7
 rotation_speed_slow: 0.4
 move_time:  0.05
 rotation_time: 0.05

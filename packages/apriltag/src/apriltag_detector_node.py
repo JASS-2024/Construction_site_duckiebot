@@ -47,6 +47,8 @@ class AprilTagDetector(DTROS):
         self.params["size"] = DTParam("~size", param_type=ParamType.FLOAT, min_value=0, max_value=1000)
         self.params["size_d"] = DTParam("~size_d", param_type=ParamType.FLOAT, min_value=0, max_value=1000)
         self.params["resize"] = DTParam("~resize", param_type=ParamType.INT, min_value=0, max_value=1000)
+        self.params["detection_latency"] = DTParam("~detection_latency", param_type=ParamType.INT, min_value=0, max_value=1000)
+
 
         # faking the parking-triger apriltag number
         self.params["parking_trigger_apriltag"] = DTParam("~parking_trigger_apriltag", param_type=ParamType.INT,
@@ -55,7 +57,7 @@ class AprilTagDetector(DTROS):
         # Publisher
 
         self.changeVBarPub = rospy.Publisher(
-            "~change_vbar", Float32, queue_size=1
+            "~change_vbar", Bool, queue_size=1
         )
         self.tags_message = rospy.Publisher('~tags_array', AprilTagDetectionArray, queue_size=1)
         self.change_pattern = rospy.Publisher('~change_pattern', String, queue_size=1)
@@ -106,21 +108,30 @@ class AprilTagDetector(DTROS):
                 # print(f"Start parking request sent, parking_state {self.parking_state}, parking_finished {self.parking_finished}")
                 self.parking_state = True
             else:
-                self.send_LED_request("CYAN")
-                self.changeVBarPub.publish(0.4)
-                self.slow = True
-                print("slowed down")
+                if not self.slow:
+                    self.send_LED_request("CYAN")
+                    msg = Bool()
+                    msg.data = True
+                    self.changeVBarPub.publish(msg.data)
+                    self.slow = True
+                    print("slowed down")
         if self.parking_state and self.parking_finished and tag_msg.tag_id == self.params[
             'parking_trigger_apriltag'].value and self.relative_placing_of_AT(tag_msg,
                                             (self.params["cent_x"].value, self.params["cent_y"].value),
                                             self.params["size"].value,
                                             (self.params["cent_x_d"].value, self.params["cent_y_d"].value),
                                             self.params["size_d"].value)[2] == 0:
-            self.parking_state = False
-            self.set_parking.publish(0)
-            # print(f"Stop parking request sent, parking_state {self.parking_state}, parking_finished {self.parking_finished}")
-            self.send_LED_request("WHITE")
-            self.set_autonomous()
+            if self.slow:
+                msg = Bool()
+                msg.data = False
+                self.changeVBarPub.publish(msg.data)
+                self.slow = False
+                print("Changed to normal speed")
+                self.parking_state = False
+                self.set_parking.publish(0)
+                # print(f"Stop parking request sent, parking_state {self.parking_state}, parking_finished {self.parking_finished}")
+                self.send_LED_request("WHITE")
+                self.set_autonomous()
 
             # message = WheelsCmdStamped(vel_left=0.7,
             #                            vel_right=0.7)
@@ -173,7 +184,7 @@ class AprilTagDetector(DTROS):
         return self.detector.detect(gray)
 
     def process_image(self, image_msg):
-        rospy.sleep(0.1)
+        rospy.sleep(self.params["detection_latency"].value)
         img = self.bridge.compressed_imgmsg_to_cv2(image_msg)
         tag_list = self._findAprilTags(img)
         detections_list = []
@@ -202,7 +213,7 @@ class AprilTagDetector(DTROS):
                 self.send_LED_request("BLUE")
                 print(f"Ready to park, parking_state {self.parking_state}, parking_finished {self.parking_finished}")
                 self.parking_finished = False
-                self.slow = True
+                # self.slow = True
                 print(f"self.slow {self.slow}")
             self.switcher(tag_msg)
 
