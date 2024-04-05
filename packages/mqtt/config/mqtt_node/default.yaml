@@ -1,8 +1,0 @@
-# Your object's name
-object_name: 'spgc0dukie'
-
-# IP Address for mqtt broker
-mqtt_broker_ip: '192.168.1.77'
-
-# Topic name that you want to subscribe to. Star (*) will be changed to the object name
-mqtt_topic: 'vehicle/*/status'
