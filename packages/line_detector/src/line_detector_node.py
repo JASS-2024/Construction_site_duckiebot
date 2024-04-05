@@ -20,9 +20,11 @@ from image_processing.anti_instagram import AntiInstagram
 from duckietown.dtros import DTROS, NodeType, TopicType, DTParam, ParamType
 
 AMOUNT_OF_ITERATIONS = 10
-HEIGHT = 240
-WIDTH = 320
-USE_DL = False
+HEIGHT = 120
+WIDTH = 160
+# HEIGHT = 120
+# WIDTH = 160
+USE_DL = True
 
 
 class LineDetectorNode(DTROS):
@@ -67,13 +69,17 @@ class LineDetectorNode(DTROS):
         super(LineDetectorNode, self).__init__(node_name=node_name, node_type=NodeType.PERCEPTION)
 
         # Publishers
-        self.pub_whites = rospy.Publisher(
-            "~request_white", Bool, queue_size=1
-        )
-
-        self.pub_whites.publish(Bool())
+        # self.pub_whites = rospy.Publisher(
+        #     "~request_white", Bool, queue_size=1
+        # )
+        #
+        # self.pub_whites.publish(Bool())
         self.debug = DTParam("~debug", param_type=ParamType.BOOL)
         self.isFirst = True
+        self._top_cutoff = rospy.get_param("~top_cutoff", None)
+        self.params = dict()
+        self.params["~top_cutoff"] = DTParam("~top_cutoff", param_type=ParamType.INT, min_value=0, max_value=1000)
+
         if USE_DL:
             # Model init block
             self.repo_path = os.environ['DT_REPO_PATH']
@@ -89,7 +95,7 @@ class LineDetectorNode(DTROS):
             torch_model.to(self.device)
             torch_model.eval()
 
-            test = np.random.rand(1, 3, HEIGHT // 2, WIDTH).astype(np.float32)
+            test = np.random.rand(1, 3, HEIGHT - self.params["~top_cutoff"].value, WIDTH).astype(np.float32)
             t_test = torch.from_numpy(test)
             t_test.size()
             t_test = t_test.to(self.device)
@@ -99,7 +105,8 @@ class LineDetectorNode(DTROS):
             iteration = 0
             while iteration < AMOUNT_OF_ITERATIONS:
                 with torch.no_grad():
-                    test = np.random.rand(1, 3, 120, 320).astype(np.float32)
+                    # test = np.random.rand(1, 3, 120, 320).astype(np.float32)
+                    test = np.random.rand(1, 3, HEIGHT - self.params["~top_cutoff"].value, WIDTH).astype(np.float32)
                     t_test = torch.from_numpy(test)
                     t_test.size()
                     t_test = t_test.to(self.device)
@@ -117,11 +124,10 @@ class LineDetectorNode(DTROS):
         self._line_detector_parameters = rospy.get_param("~line_detector_parameters", None)
         self._colors = rospy.get_param("~colors", None)
         self._img_size = rospy.get_param("~img_size", None)
-        self._top_cutoff = rospy.get_param("~top_cutoff", None)
-        self.params = dict()
-        self.params["~top_cutoff"] = DTParam("~top_cutoff", param_type=ParamType.INT, min_value=0, max_value=1000)
 
         self.bridge = CvBridge()
+
+        self.is_active = True
 
         # The thresholds to be used for AntiInstagram color correction
         self.ai_thresholds_received = False
@@ -172,12 +178,31 @@ class LineDetectorNode(DTROS):
             "~thresholds", AntiInstagramThresholds, self.thresholds_cb, queue_size=1
         )
 
+        self.switcher_sub = rospy.Subscriber("~switcher", Bool, self.switcher_cb, queue_size=1)
+
+        self.log("Node constructor is finished")
+
+        # self.sub_image = rospy.Subscriber(
+        #     "~image/compressed", CompressedImage, None, buff_size=10000000, queue_size=1
+        # )
+        #
+        # self.sub_thresholds = rospy.Subscriber(
+        #     "~thresholds", AntiInstagramThresholds, None, queue_size=1
+        # )
+
+    def switcher_cb(self, msg):
+        self.is_active = msg.data
+
     def thresholds_cb(self, thresh_msg):
+        if not self.is_active:
+            return
         self.anti_instagram_thresholds["lower"] = thresh_msg.low
         self.anti_instagram_thresholds["higher"] = thresh_msg.high
         self.ai_thresholds_received = True
 
     def image_cb(self, image_msg):
+        if not self.is_active:
+            return
         """
         Processes the incoming image messages.
 
@@ -196,6 +221,8 @@ class LineDetectorNode(DTROS):
 
         """
 
+        if self.isFirst:
+            self.log("Image callback called")
         start = time.time_ns()
         # Decode from compressed image with OpenCV
         try:
@@ -210,29 +237,39 @@ class LineDetectorNode(DTROS):
             with torch.no_grad():
                 x = torch.from_numpy(img).permute(2, 0, 1)
                 x = self.resize(x)
-                x = x[:, x.size()[1] // 2:, :]
+                x = x[:, self.params["~top_cutoff"].value:, :]
                 x = torch.unsqueeze(x, 0)
                 if self.debug.value:
                     print(x.size())
+                if self.isFirst:
+                    self.log("Image converted to tensor")
                 x = x.to(self.device) / 255
+                if self.isFirst:
+                    self.log("Image sent to cuda")
                 start_nn = time.time_ns()
                 result = self.model(x)
+                if self.isFirst:
+                    self.log("NN called")
                 delta_nn = time.time_ns() - start_nn
                 # result = result.to(torch.device("cpu"))
                 result = result[0]
                 if self.debug.value:
                     print(result.size())
                 buf = torch.argmax(result, dim=0).to(torch.uint8).to(torch.device("cpu")).numpy()
+                if self.isFirst:
+                    self.log("Sent back to CPU")
                 delta_no_mem = time.time_ns() - start
                 if self.debug.value:
                     print(np.unique(buf))
         else:
-            buf = np.ones((HEIGHT, WIDTH))
+            buf = np.ones((HEIGHT - self.params["~top_cutoff"].value, WIDTH))
         image = np.zeros((buf.shape[0], buf.shape[1], 3), dtype=np.uint8)
         image[buf == 1] = [255, 255, 255]
         image[buf == 2] = [0, 255, 255]
         msg = self.bridge.cv2_to_compressed_imgmsg(image)
         msg.header = image_msg.header
+        if self.isFirst:
+            self.log("Pubbed to debug topic")
         self.pub_d_segmentation.publish(msg)
 
         # Extract the line segments for every color
@@ -419,3 +456,4 @@ if __name__ == "__main__":
     line_detector_node = LineDetectorNode(node_name="line_detector_node")
     # Keep it spinning to keep the node alive
     rospy.spin()
+
