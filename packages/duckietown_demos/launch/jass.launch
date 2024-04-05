@@ -57,6 +57,10 @@
         <arg name="veh" value="$(arg veh)"/>
     </include>
 
+    <include file="$(find check_distance)/launch/check_distance_node.launch">
+        <arg name="veh" value="$(arg veh)"/>
+    </include>
+
 
     <include file="$(find rectangle_test_node)/launch/rectangle_test_node.launch">
         <arg name="veh" value="$(arg veh)"/>
