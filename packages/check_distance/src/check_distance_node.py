@@ -20,7 +20,8 @@ class CheckDistanceNode(DTROS):
         self.params = dict()
 
         self.params["distance"] = DTParam("~distance", param_type=ParamType.FLOAT, min_value=0, max_value=10)
-        self.params["working"] = DTParam("~working", param_type=ParamType.BOOL)
+
+        self.working = True
         self.distance_was_shorter = True
 
         vehicle_name = os.environ['VEHICLE_NAME']
@@ -52,7 +53,7 @@ class CheckDistanceNode(DTROS):
 
 
     def check_distance(self, msg):
-        if not self.params["working"].value:
+        if not self.working:
             return
 
         # Access distance data from the Range message
@@ -79,9 +80,9 @@ class CheckDistanceNode(DTROS):
 
     def switch_state(self, msg):
         if msg.data:
-            self.params["working"].value = True
+            self.working = True
         else:
-            self.params["working"].value = False
+            self.working = False
 
             bool_stamped_msg = BoolStamped()
             bool_stamped_msg.header.stamp = rospy.Time.now()
