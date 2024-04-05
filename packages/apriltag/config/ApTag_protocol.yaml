@@ -11,6 +11,7 @@ cent_y: 150
 cent_x_d: 70
 cent_y_d: 100
 size: 65
-size_d: 15
+size_d: 30
 resize: 6
 parking_trigger_apriltag: 533
+detection_latency: 1

@@ -21,6 +21,7 @@
             <remap from="apriltag_detector_node/set_state" to="fsm_node/set_state"/>
             <remap from="apriltag_detector_node/fsm_signal" to="parking_node/fsm_signal"/>
             <remap from="apriltag_detector_node/parking_finished" to="parking_node/parking_finished"/>
+            <remap from="apriltag_detector_node/change_vbar" to="lane_controller_node/change_vbar"/>
         </node>
 </group>
 </launch>

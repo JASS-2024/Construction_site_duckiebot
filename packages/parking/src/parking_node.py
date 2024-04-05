@@ -414,6 +414,7 @@ class ParkingNode(DTROS):
             current_pattern["april_tag_side"],
             (current_pattern["april_tag_center_delta"], current_pattern["april_tag_center_delta"]),
             current_pattern["april_tag_side_delta"], current_pattern["speed_changing_threshold"])
+
         if relative_position[0] != 0:
             movement = MovementPattern.MOVING_RIGHT_SLOW if relative_position[0] > 0 else MovementPattern.MOVING_LEFT_SLOW
             # self.log(f"desired_position {current_pattern["april_tag_center_x"]}")
