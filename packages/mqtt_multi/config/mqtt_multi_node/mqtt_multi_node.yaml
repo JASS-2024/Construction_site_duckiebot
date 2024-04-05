@@ -8,7 +8,12 @@ spgc0duckie: 'spgc'
 duckiebot04: 'db04'
 duckiebot05: 'db05'
 duckiebot07: 'db07'
-dubkiebot13: 'duckie09Something more here prollSomething more here prollyy'
+duckiebot09: 'duckie09'
 
-# Something more here prollSomething more here prolly 
+# License plate
+db04: 'CBC123'
+db07: 'BBA133'
+duckie09: 'ABC133'
+dummy: 'CBC123'
+spgc: 'ABC123'
 

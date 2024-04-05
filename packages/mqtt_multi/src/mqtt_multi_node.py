@@ -1,144 +1,91 @@
-#!/usr/bin/env python4
-import time
+#!/usr/bin/env python3
+import json
+import os
 import rospy
-
-
-
-from paho-mqtt import mqtt
-from paho.mqtt.enums import CallBackAPIVersion
-
-
-from duckietown.dtros import DTROS, TopicType, NodeType
+import paho.mqtt.client as mqtt
+from std_msgs.msg import String
+from duckietown_msgs.msg import BoolStamped
+from duckietown.dtros import DTROS, NodeType, DTParam, ParamType
+from paho.mqtt.enums import CallbackAPIVersion
 
 
 class MQTTMultiNode(DTROS):
-    """MQTT Node that is responsible of communicating with mqtt_broker. 
-
-    Events:
-        ~ Received booked slot: on this event this node publishes this booked 
-        slot to the ROS topic
-        
-        ~ Received isParked: on this event this node publishes message with 
-        bot's name to the isParked mqtt topic
-        
-        ~ Received: on this event this node publishes this booked slot to the ROS topic
-
-    Configuration:
-        ~ mqtt_broker_host (:obj:`str`): address of mqtt broker  
-
-        ~ mqtt_broker_port (:obj:`str`): address of mqtt broker  
-    
-    Publishers:
-        ~isParked (:obj:`{"name": "_"}`): publisher for publishing the success 
-        message once bot is parked
-
-    Subscribers:
-        ~isParked_node (:obj:`BoolStamped`): listens to the parking node 
-        and once it receive data it triggers node to publish to the mqtt 
-
-    """
-
-    # TODO: 'Remove all unneccessary prints and logs from the console!' 
-
-
-    # TODO: 'Subscribe to the parking_node topic to get data and trigger on the events' 
-
     def __init__(self, node_name):
-        # Initialize the DTROS parent class
         super(MQTTMultiNode, self).__init__(node_name=node_name, node_type=NodeType.PERCEPTION)
-
-        # Something useful, idk, just copy paste
-        self.robot_type = rospy.get_param("~robot_type")
-
-        # Getting the real bot's name 
         self.vehicle_name = os.environ['VEHICLE_NAME']
- 
+        temp_for_mapping_optitrack_and_regular_bot_name = "~" + self.vehicle_name
 
-        # Getting adjusted name for OptiTrack from yaml file
-        vehicle_name_for_topic = DTParam(self.vehicle_name, param_type=ParamType.STRING)
- 
-        # Getting broker's params 
+        print("temp_for_mapping_optitrack_and_regular_bot_name " + temp_for_mapping_optitrack_and_regular_bot_name)
+
+        # Adapting vehicle name for optitrack naming
+        vehicle_name_for_topic = DTParam(temp_for_mapping_optitrack_and_regular_bot_name, param_type=ParamType.STRING)
+        vehicle_name_for_topic_with_tilda = "~" + vehicle_name_for_topic.value
+        self.vehicle_name_optitrack = vehicle_name_for_topic.value
+
         self.mqtt_broker_host = DTParam("~mqtt_broker_host", param_type=ParamType.STRING)
-        self.mqtt_broker_port = DTParam("~mqtt_broker_port", param_type=ParamType.INT)
-        self.mqtt_broker_timeout = DTParam("~mqtt_broker_timeout", param_type=ParamType.INT)
-        
-        # Formatted message for isParked mqtt topic
-        isParked_msg_snippet = {
-            "name": vehicle_name_for_topic.value, # ATTENTION: May be without value,
-        } 
+        print(self.mqtt_broker_host.value)
+        self.license_plate = DTParam(vehicle_name_for_topic_with_tilda, param_type=ParamType.STRING)
+        print("Vehicle_name_for_topic_with_tilda " + vehicle_name_for_topic_with_tilda)
+        print("Mapped license plate " + self.license_plate.value)
+        self.mqtt_broker_port = DTParam("~mqtt_broker_port", param_type=ParamType.FLOAT)
 
-        # Defining variable + fallback
-        booked_slot_name = "for some reason wasn't updated" # Fallback, just for debug
+        self.client = mqtt.Client(callback_api_version=CallbackAPIVersion.VERSION2)
+        self.client.on_connect = self.on_connect
+        self.client.on_message = self.on_message
+        self.client.on_disconnect = self.on_disconnect
 
-        # Binding custom methods to mqtt client
-        client.on_connect = self.on_connect
-        client.on_message = self.on_message
-        client.on_disconnect = self.on_disconnect
-        
-        # Creating instance of mqtt client
-        client = mqtt.Client(callback_api_version=CallBackAPIVersion.VERSION2)
-        
+        # Connecting to MQTT Broker
+        self.client.connect(self.mqtt_broker_host.value, self.mqtt_broker_port.value, 60)
+        self.client.loop_start()
 
-        # Trying to connect
-        self.establish_connection()
+        # Initializing Publisher and Subscribers
+        self.booked_slot_pub = rospy.Publisher("~booked_slot", String, queue_size=1)
+        self.is_parked_sub = rospy.Subscriber("~parking_node/parking_finished", BoolStamped, self.on_park_trigger)
 
-        # Publishers
-        self.booked_slot = rospy.Publisher("~booked_slot", String, on_get_parking_slot, queue_size=1)
+        # Saving place id that we get from MQTT garage/knockknock topic
+        self.place_id = None
 
 
-        # Subscribers
-        self.is_parked_sub = rospy.Subscriber("~parking_node/parking_finished", BoolStamped, 
-            on_park_trigger, queue_size=1)
-        
-        
-        # Staring mqtt client loop
-        client.loop_forever()
 
 
-    def on_connect(client, userdata, flags, rc, properties=None):
-        """ Default required method for mqtt client """
-        print(f"Connected with result code {rc}")
-        client.subscribe(compute_topics_name(vehicle_name_for_topic))
-
-        
-    def compute_topics_name(self, name):
-        """ Adds robot's name to the topic template and return a real mqtt topic name
-            Arguments:
-                ~name (str): Name of your robot, already compared with yaml config and adjusted for OptiTrack naming
-
-        """
+    def adapt_name_for_optitrack(self, name):
         basename = "vehicle/*/status"
         computed_topic_name = basename.replace('*', name)
         print(f"New topic name for {name} is {computed_topic_name}")
         return computed_topic_name
 
+    def on_disconnect(client, userdata, rc, Properties=None, reason=None):
+        if rc != 0:
+            print(f"Unexpected disconnection. Reason: {reason}")
+        else:
+            print("Disconnected successfully.")
 
-    def on_get_parking_slot(self, booked_slot_name):
-        """ Once it triggered, this function publishes booked_slot_name to the ~booked_slot ROS topic 
+    def on_connect(self, client, userdata, connect_flags, rc, properties, ):
+        print(f"Connected with result code {rc}")
+        # Subscribing to required mqtt topics
+        self.client.subscribe("garage/knockknock")
 
-        Arguments:
-            ~booked_slot_name (str): Name that we get from the mqtt topic with booked slot's name for this robot
-        
-        """
-        self.booked_slot.publish(booked_slot_name)
-        print("Successfully published booked slot name")
+    def on_message(self, client, userdata, msg):
+        if msg.topic == "garage/knockknock":
+            try:
+                print("Yes, it was garage/knockknock")
+                message = json.loads(msg.payload.decode("utf-8"))
+                print("Message.get('license_plate') " + message.get('license_plate'))
+                print("self.license_plate " + self.license_plate.value)
+                if message.get('license_plate') == self.license_plate.value:
+                    self.place_id = message.get('place_id')
+                    # Publishing received place_id to the ROS topic
+                    self.booked_slot_pub.publish(self.place_id)
+                    print(f"Published! For this bot place_id is {self.place_id}")
+            except json.JSONDecodeError as e:
+                rospy.logerr(f"Error decoding JSON: {e}")
 
-
-    def on_park_trigger(self):
-        """ Once it's triggered, this function notifies "isParked" mqtt topic """
-        self.mqtt_send_message("isParked","Succesfully notified isParked topic in mqtt")
-
-
-    def mqtt_send_message(mqtt_topic_name, message):
-        """ Sends a message to required topic through mqtt. As simple as that.
-
-        Arguments:
-            ~message (str): Message that you want to send
-            
-            ~topic_name (str): Topic's name to which you're sending your message'
-
-        """
-        client.publish(mqtt_topic_name, message)
+    def on_park_trigger(self, msg):
+        print(self.place_id + self.license_plate.value)
+        if self.place_id and self.license_plate.value:
+            print('Mqtt: TRIGGERED ON PARK')
+            message = {"name": self.vehicle_name_optitrack, "place_id": self.place_id, "license_plate": self.license_plate.value}
+            self.client.publish("isParked", json.dumps(message))
 
 
 

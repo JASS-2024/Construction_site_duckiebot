@@ -26,17 +26,9 @@
     <arg name="/lane_following/lane_controller" value="true"/>
     <arg name="/lane_following/stop_line_filter" value="true"/>
     <arg name="LED" value="true"/>
-    <arg name="/LED/emitter" value="true"/>
+<!--     <arg name="/LED/emitter" value="true"/> -->
 
   	</include>
-  
-    <include file="$(find apriltag)/launch/apriltag_detector_node.launch">
-              <arg name="veh" value="$(arg veh)"/>
-    </include>
-  
-    <include file="$(find obstacle_detection)/launch/obstacle_detection_node.launch">
-              <arg name="veh" value="$(arg veh)"/>
-    </include>
 
     <include file="$(find movement)/launch/movement_node.launch">
               <arg name="veh" value="$(arg veh)"/>
@@ -46,7 +38,7 @@
               <arg name="veh" value="$(arg veh)"/>
     </include>
 
-    <include file="$(find mqtt)/launch/mqtt_node.launch">
+    <include file="$(find mqtt_multi)/launch/mqtt_multi_node.launch">
               <arg name="veh" value="$(arg veh)"/>
     </include>
   
